@@ -75,6 +75,7 @@ const adminEl = {
   formAccessoryCategory: document.getElementById('formAccessoryCategory'),
   formAccessoryFitment: document.getElementById('formAccessoryFitment'),
   formAccessoryDesc: document.getElementById('formAccessoryDesc'),
+  formAccessorySoldOut: document.getElementById('formAccessorySoldOut'),
   formImageUrlInput: document.getElementById('formImageUrlInput'),
   dragDropZone: document.getElementById('dragDropZone'),
   photoPreviewContainer: document.getElementById('photoPreviewContainer'),
@@ -342,6 +343,16 @@ function renderAdminAccessoriesTable() {
         <td class="p-4 uppercase text-neutral-500 tracking-zara text-[11px]">
           ${item.category}
         </td>
+        <td class="p-4 text-center whitespace-nowrap">
+          <button 
+            type="button"
+            onclick="toggleSoldOutStatus('${item.id}')"
+            class="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider rounded border transition-all ${item.isSoldOut ? 'bg-red-50 text-red-700 border-red-300 hover:bg-red-100' : 'bg-emerald-50 text-emerald-700 border-emerald-300 hover:bg-emerald-100'}"
+            title="Click to toggle Sold Out status on customer storefront"
+          >
+            ${item.isSoldOut ? '🔴 SOLD OUT' : '🟢 IN STOCK'}
+          </button>
+        </td>
         <td class="p-4 text-right space-x-2 whitespace-nowrap">
           <button 
             onclick="openEditAccessoryModal('${item.id}')"
@@ -361,6 +372,20 @@ function renderAdminAccessoriesTable() {
   }).join('');
 }
 
+// Toggle Sold Out Status (Live Cloud & Storefront Sync)
+window.toggleSoldOutStatus = async function(id) {
+  const item = adminState.catalog.products.find(p => p.id === id);
+  if (!item) return;
+
+  item.isSoldOut = !item.isSoldOut;
+  renderAdminAccessoriesTable();
+  const cloudSynced = await syncToDisk(adminState.catalog);
+  showToast(item.isSoldOut 
+    ? `🔴 "${item.name}" MARKED AS SOLD OUT (LIVE STOREFRONT UPDATED)`
+    : `🟢 "${item.name}" RETURNED TO IN STOCK`
+  );
+};
+
 // Open Add Accessory Modal
 window.openAddAccessoryModal = function() {
   adminState.editingAccessoryId = null;
@@ -369,6 +394,7 @@ window.openAddAccessoryModal = function() {
   adminEl.formAccessoryName.value = "";
   adminEl.formAccessoryFitment.value = "";
   adminEl.formAccessoryDesc.value = "";
+  if (adminEl.formAccessorySoldOut) adminEl.formAccessorySoldOut.checked = false;
   if (adminEl.formImageUrlInput) adminEl.formImageUrlInput.value = "";
 
   adminState.activePhotos = [];
@@ -395,6 +421,7 @@ window.openEditAccessoryModal = function(id) {
   adminEl.formAccessoryName.value = item.name;
   adminEl.formAccessoryFitment.value = item.fitment || '';
   adminEl.formAccessoryDesc.value = item.description || '';
+  if (adminEl.formAccessorySoldOut) adminEl.formAccessorySoldOut.checked = Boolean(item.isSoldOut);
   if (adminEl.formImageUrlInput) adminEl.formImageUrlInput.value = "";
 
   const brands = adminState.catalog.brands.filter(b => b.id !== 'all');
@@ -574,6 +601,7 @@ window.handleSaveAccessory = async function(e) {
   const category = adminEl.formAccessoryCategory.value;
   const fitment = adminEl.formAccessoryFitment.value.trim();
   const desc = adminEl.formAccessoryDesc.value.trim();
+  const isSoldOut = adminEl.formAccessorySoldOut ? adminEl.formAccessorySoldOut.checked : false;
 
   if (!adminState.activePhotos || adminState.activePhotos.length === 0) {
     alert("Please add at least one photo (Front, Back, etc.) using drag & drop or photo link.");
@@ -591,6 +619,7 @@ window.handleSaveAccessory = async function(e) {
       item.category = category;
       item.fitment = fitment;
       item.description = desc;
+      item.isSoldOut = isSoldOut;
       item.image = primaryPhoto;
       item.images = allPhotos;
     }
@@ -603,6 +632,7 @@ window.handleSaveAccessory = async function(e) {
       category: category,
       fitment: fitment,
       description: desc,
+      isSoldOut: isSoldOut,
       image: primaryPhoto,
       images: allPhotos
     };

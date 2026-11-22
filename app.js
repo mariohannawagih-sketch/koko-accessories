@@ -152,9 +152,18 @@ function renderCarBrands() {
     const isActive = state.selectedBrand === b.id;
     
     // Count accessories for this brand
-    const count = b.id === 'all' 
-      ? products.length 
-      : products.filter(p => p && (p.brand === b.id || p.brand === 'universal')).length;
+    let count = 0;
+    if (b.id === 'all') {
+      count = products.length;
+    } else if (b.id === 'audi') {
+      count = products.filter(p => p && (p.brand === 'audi' || p.brand === 'audislien' || p.brand === 'audirs' || p.brand === 'universal')).length;
+    } else if (b.id === 'audislien') {
+      count = products.filter(p => p && (p.brand === 'audislien' || p.brand === 'audi' || p.brand === 'universal')).length;
+    } else if (b.id === 'audirs') {
+      count = products.filter(p => p && (p.brand === 'audirs' || p.brand === 'audi' || p.brand === 'universal')).length;
+    } else {
+      count = products.filter(p => p && (p.brand === b.id || p.brand === 'universal')).length;
+    }
 
     const countLabel = count === 1 ? '1 ACCESSORY' : `${count} ACCESSORIES`;
 
@@ -251,7 +260,18 @@ function renderAccessories() {
 
     // 1. Car Brand Filter
     if (state.selectedBrand !== 'all') {
-      if (p.brand !== state.selectedBrand && p.brand !== 'universal') {
+      const b = p.brand;
+      const sel = state.selectedBrand;
+      const isAudiFamily = (sel === 'audi' || sel === 'audislien' || sel === 'audirs');
+      const itemIsAudiFamily = (b === 'audi' || b === 'audislien' || b === 'audirs');
+
+      if (sel === 'audi') {
+        if (!itemIsAudiFamily && b !== 'universal') return false;
+      } else if (sel === 'audislien') {
+        if (b !== 'audislien' && b !== 'audi' && b !== 'universal') return false;
+      } else if (sel === 'audirs') {
+        if (b !== 'audirs' && b !== 'audi' && b !== 'universal') return false;
+      } else if (b !== sel && b !== 'universal') {
         return false;
       }
     }
@@ -304,33 +324,45 @@ function renderAccessories() {
     const brandName = brandObj ? brandObj.name : (item.brand ? item.brand.toUpperCase() : 'CUSTOM');
     const photoUrl = (item.images && item.images.length > 0) ? item.images[0] : (item.image || 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&w=1200&q=80');
     const photoCount = (item.images && item.images.length > 1) ? item.images.length : 1;
+    const isSoldOut = Boolean(item.isSoldOut);
 
     return `
-      <div class="accessory-card group" onclick="openDetailModal('${item.id}')">
+      <div class="accessory-card group ${isSoldOut ? 'opacity-85' : ''}" onclick="openDetailModal('${item.id}')">
         <div class="accessory-img-box relative">
           <img 
             src="${photoUrl}" 
             alt="${item.name || 'Accessory'}" 
-            class="accessory-img"
+            class="accessory-img ${isSoldOut ? 'grayscale-[20%] contrast-90' : ''}"
             loading="lazy"
             onerror="this.src='https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&w=1200&q=80'"
           />
-          <div class="absolute top-2.5 left-2.5">
+          <div class="absolute top-2.5 left-2.5 z-10">
             <span class="bg-black/90 text-white text-[9px] font-semibold tracking-zara-wide uppercase px-2 py-0.5">
               ${brandName}
             </span>
           </div>
+          ${isSoldOut ? `
+            <div class="absolute top-2.5 right-2.5 z-10">
+              <span class="bg-[#E10600] text-white text-[9px] font-bold tracking-zara-wide uppercase px-2 py-0.5 shadow-sm">
+                SOLD OUT
+              </span>
+            </div>
+          ` : ''}
           ${photoCount > 1 ? `
-            <div class="absolute bottom-2 right-2 bg-black/80 text-white text-[9px] font-bold px-2 py-0.5 uppercase tracking-wide">
+            <div class="absolute bottom-2 right-2 bg-black/80 text-white text-[9px] font-bold px-2 py-0.5 uppercase tracking-wide z-10">
               ${photoCount} PHOTOS
             </div>
           ` : ''}
         </div>
 
         <div class="pt-3 pb-4">
-          <span class="block text-[10px] uppercase tracking-zara-wide text-neutral-400 mb-1">
-            ${(item.category || '').toUpperCase()}
-          </span>
+          <div class="flex items-center justify-between text-[10px] uppercase tracking-zara-wide mb-1">
+            <span class="text-neutral-400">${(item.category || '').toUpperCase()}</span>
+            ${isSoldOut 
+              ? '<span class="text-[#E10600] font-bold tracking-wider">● SOLD OUT</span>' 
+              : '<span class="text-emerald-600 dark:text-emerald-400 font-semibold tracking-wider">● IN STOCK</span>'
+            }
+          </div>
           <h3 class="text-xs uppercase font-medium tracking-zara text-black dark:text-white group-hover:text-neutral-500 dark:group-hover:text-neutral-300 transition-colors line-clamp-1 mb-1.5">
             ${item.name || 'Accessory'}
           </h3>
@@ -359,11 +391,12 @@ function getProductWhatsAppUrl(product, allImages) {
     }
   }
 
+  const isSoldOut = Boolean(product.isSoldOut);
   const lines = [
     'Hello KOKO ACCESSORIES!',
-    'How much is this item?',
+    isSoldOut ? 'When will this sold out item be back in stock?' : 'How much is this item?',
     '',
-    `*Item:* ${product.name || 'Accessory'}`,
+    `*Item:* ${product.name || 'Accessory'}${isSoldOut ? ' [CURRENTLY SOLD OUT]' : ''}`,
     `*Compatibility:* ${product.fitment || 'All Models'}`
   ];
   if (photoLink) {
@@ -461,6 +494,25 @@ window.openDetailModal = function(productId) {
             ${product.name}
           </h2>
 
+          <!-- Availability Status Banner -->
+          ${product.isSoldOut ? `
+            <div class="mb-5 p-3 bg-red-50 border-l-4 border-[#E10600] flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-[#E10600] animate-pulse"></span>
+                <span class="text-xs font-bold text-[#E10600] uppercase tracking-wider">CURRENTLY SOLD OUT • OUT OF STOCK</span>
+              </div>
+              <span class="text-[10px] text-neutral-500 uppercase tracking-widest font-semibold">RESTOCK SOON</span>
+            </div>
+          ` : `
+            <div class="mb-5 p-2.5 bg-emerald-50 border-l-4 border-emerald-600 flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-600"></span>
+                <span class="text-xs font-bold text-emerald-800 uppercase tracking-wider">IN STOCK &amp; READY TO SHIP</span>
+              </div>
+              <span class="text-[10px] text-emerald-700 uppercase tracking-widest font-semibold">AVAILABLE NOW</span>
+            </div>
+          `}
+
           <!-- Compatibility Box -->
           <div class="p-4 bg-neutral-50 border border-neutral-200 mb-6">
             <span class="text-[10px] font-bold uppercase tracking-zara-wide text-black block mb-1">
@@ -494,10 +546,10 @@ window.openDetailModal = function(productId) {
           <a 
             href="${getProductWhatsAppUrl(product, allImages)}"
             target="_blank"
-            class="bg-[#25D366] hover:bg-[#20ba5a] text-white w-full py-4 text-xs font-bold text-center flex items-center justify-center gap-2 tracking-zara-wide shadow-md transition-all hover:shadow-lg"
+            class="${product.isSoldOut ? 'bg-[#b91c1c] hover:bg-[#991b1b]' : 'bg-[#25D366] hover:bg-[#20ba5a]'} text-white w-full py-4 text-xs font-bold text-center flex items-center justify-center gap-2 tracking-zara-wide shadow-md transition-all hover:shadow-lg"
           >
             <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.888 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-            <span>INQUIRE ON WHATSAPP &bull; ASK PRICE</span>
+            <span>${product.isSoldOut ? 'INQUIRE RESTOCK DATE ON WHATSAPP' : 'INQUIRE ON WHATSAPP &bull; ASK PRICE'}</span>
           </a>
           <button 
             onclick="closeDetailModal()"
