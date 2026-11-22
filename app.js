@@ -64,9 +64,48 @@ function initElements() {
   };
 }
 
+// ============================================================
+// THEME MANAGEMENT (LIGHT & DARK MODE)
+// ============================================================
+function initTheme() {
+  let theme = 'dark'; // Default as requested
+  try {
+    const saved = localStorage.getItem('koko_theme');
+    if (saved === 'light' || saved === 'dark') {
+      theme = saved;
+    }
+  } catch (e) {}
+  applyTheme(theme);
+}
+
+function applyTheme(theme) {
+  const html = document.documentElement;
+  const icon = document.getElementById('themeToggleIcon');
+  const label = document.getElementById('themeToggleLabel');
+
+  if (theme === 'dark') {
+    html.classList.add('dark');
+    if (icon) icon.textContent = '🌙';
+    if (label) label.textContent = 'DARK';
+  } else {
+    html.classList.remove('dark');
+    if (icon) icon.textContent = '☀️';
+    if (label) label.textContent = 'LIGHT';
+  }
+  try {
+    localStorage.setItem('koko_theme', theme);
+  } catch (e) {}
+}
+
+window.toggleTheme = function() {
+  const isDark = document.documentElement.classList.contains('dark');
+  applyTheme(isDark ? 'light' : 'dark');
+};
+
 // Init Application
 async function initApp() {
   try {
+    initTheme();
     initElements();
     state.catalog = getSafeCatalog();
     
@@ -292,13 +331,13 @@ function renderAccessories() {
           <span class="block text-[10px] uppercase tracking-zara-wide text-neutral-400 mb-1">
             ${(item.category || '').toUpperCase()}
           </span>
-          <h3 class="text-xs uppercase font-medium tracking-zara text-black group-hover:text-neutral-500 transition-colors line-clamp-1 mb-1.5">
+          <h3 class="text-xs uppercase font-medium tracking-zara text-black dark:text-white group-hover:text-neutral-500 dark:group-hover:text-neutral-300 transition-colors line-clamp-1 mb-1.5">
             ${item.name || 'Accessory'}
           </h3>
-          <p class="text-[11px] text-neutral-600 line-clamp-1">
-            <span class="font-semibold text-black">FIT:</span> ${item.fitment || 'All Models'}
+          <p class="text-[11px] text-neutral-600 dark:text-neutral-400 line-clamp-1">
+            <span class="font-semibold text-black dark:text-white">FIT:</span> ${item.fitment || 'All Models'}
           </p>
-          <div class="mt-2 pt-2 border-t border-neutral-100 flex items-center justify-between text-[10px] uppercase tracking-zara-wide text-neutral-900 font-semibold group-hover:underline">
+          <div class="mt-2 pt-2 border-t border-neutral-100 dark:border-neutral-800 flex items-center justify-between text-[10px] uppercase tracking-zara-wide text-neutral-900 dark:text-neutral-300 font-semibold group-hover:underline">
             <span>VIEW PHOTOS &amp; DETAILS &rarr;</span>
           </div>
         </div>

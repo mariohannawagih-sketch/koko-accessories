@@ -8,6 +8,7 @@
 :root {
   --font-serif: 'Bodoni Moda', Georgia, serif;
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-racing: 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   
   --bg-white: #ffffff;
   --bg-subtle: #f8f8f8;
@@ -17,6 +18,25 @@
   --border-strong: #000000;
   
   --ease-zara: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ============================================================
+   DARK THEME SYSTEM (AUTOMOTIVE CHASSIS)
+   ============================================================ */
+html.dark {
+  --bg-white: #0b0c10;
+  --bg-subtle: #121318;
+  --text-black: #f3f4f6;
+  --text-muted: #9ca3af;
+  --border-subtle: #1f2128;
+  --border-strong: #333642;
+  background-color: #0b0c10;
+  color: #f3f4f6;
+}
+
+html.dark body {
+  background-color: #0b0c10;
+  color: #f3f4f6;
 }
 
 /* Global Reset */
@@ -107,6 +127,69 @@ body {
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+html.dark .zara-header {
+  background-color: rgba(16, 17, 22, 0.95);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* German Motorsport Crest & Racing Styles */
+.font-racing {
+  font-family: var(--font-racing);
+}
+
+/* German Flag Racing Slanted Crest */
+.de-flag-slash {
+  display: inline-flex;
+  transform: skewX(-16deg);
+  border-radius: 2px;
+  overflow: hidden;
+  height: 22px;
+  width: 18px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  flex-shrink: 0;
+}
+.de-flag-slash span {
+  flex: 1;
+  height: 100%;
+}
+.de-flag-slash .de-black {
+  background: #111111;
+}
+html.dark .de-flag-slash .de-black {
+  background: #24252f;
+  border-right: 0.5px solid #3a3c4a;
+}
+.de-flag-slash .de-red {
+  background: #E10600;
+}
+.de-flag-slash .de-gold {
+  background: #FFCC00;
+}
+
+/* German Tricolor Dots */
+.de-dots {
+  display: inline-flex;
+  gap: 3px;
+  align-items: center;
+}
+.de-dot-black {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: #111111;
+}
+html.dark .de-dot-black {
+  background: #ffffff;
+  opacity: 0.5;
+}
+.de-dot-red {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: #E10600;
+}
+.de-dot-gold {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: #FFCC00;
 }
 
 /* Car Brand Card in the Selection Section - German Motorsport Inspired */
@@ -352,4 +435,95 @@ body {
 
 .toast-notice.show {
   transform: translateX(-50%) translateY(0);
+}
+
+/* ============================================================
+   DARK MODE COMPONENT OVERRIDES
+   ============================================================ */
+html.dark .category-tab {
+  background: #14151a;
+  border-color: #242631;
+  color: #9ca3af;
+}
+
+html.dark .category-tab:hover {
+  border-color: #4b5563;
+  color: #ffffff;
+}
+
+html.dark .category-tab.active {
+  background: #ffffff;
+  color: #000000;
+  border-color: #ffffff;
+}
+
+html.dark .accessory-img-box {
+  background-color: #121318;
+  border-color: #1f2128;
+}
+
+html.dark .accessory-card:hover .accessory-img-box {
+  border-color: #3b3d4a;
+}
+
+html.dark .modal-box {
+  background-color: #121318 !important;
+  border: 1px solid #26272e;
+  color: #f3f4f6 !important;
+}
+
+html.dark .modal-box .bg-white {
+  background-color: #121318 !important;
+}
+
+html.dark .modal-box .bg-\[\#f7f7f7\],
+html.dark .modal-box [class*="bg-[#f7f7f7]"] {
+  background-color: #161720 !important;
+}
+
+html.dark .modal-box .text-black,
+html.dark .modal-box .text-neutral-900 {
+  color: #f3f4f6 !important;
+}
+
+html.dark .modal-box .text-neutral-600,
+html.dark .modal-box .text-neutral-500 {
+  color: #9ca3af !important;
+}
+
+html.dark .modal-box .border-neutral-100,
+html.dark .modal-box .border-neutral-200 {
+  border-color: #26272e !important;
+}
+
+html.dark .modal-box .bg-neutral-50,
+html.dark .modal-box .bg-neutral-100 {
+  background-color: #181922 !important;
+}
+
+html.dark .btn-black {
+  background-color: #ffffff;
+  color: #000000;
+  border-color: #ffffff;
+}
+
+html.dark .btn-black:hover {
+  background-color: #111111;
+  color: #ffffff;
+}
+
+html.dark .btn-outline {
+  border-color: #333642;
+  color: #f3f4f6;
+}
+
+html.dark .btn-outline:hover {
+  background-color: #ffffff;
+  color: #000000;
+}
+
+html.dark .toast-notice {
+  background-color: #1a1c24;
+  color: #ffffff;
+  border: 1px solid #333642;
 }
