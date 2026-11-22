@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KOKO ACCESSORIES — Luxury Car Accessories Showcase</title>
+  <meta name="description" content="Select your car to discover tailored accessories for Hyundai, Mercedes-Benz, BMW, Audi, Toyota, Kia, Porsche and more.">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Google Fonts: Bodoni Moda (Zara editorial serif) & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..900;1,6..96,400..900&family=Inter:wght@200;300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Custom Zara Stylesheet -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="bg-white text-black selection:bg-black selection:text-white">
+
+  <!-- 1. ANNOUNCEMENT TICKER -->
+  <div class="announcement-bar">
+    <div class="marquee-track">
+      <span class="mx-6">&bull; KOKO ACCESSORIES &mdash; AUTOMOTIVE INTERIOR &amp; EXTERIOR ATELIER</span>
+      <span class="mx-6">&bull; SELECT YOUR VEHICLE TO BROWSE COMPATIBLE ACCESSORIES</span>
+      <span class="mx-6">&bull; HYUNDAI, MERCEDES-BENZ, BMW, AUDI, TOYOTA, KIA &amp; PORSCHE</span>
+      <span class="mx-6">&bull; HIGH-FASHION COCKPIT ARCHITECTURE</span>
+      <span class="mx-6">&bull; KOKO ACCESSORIES &mdash; AUTOMOTIVE INTERIOR &amp; EXTERIOR ATELIER</span>
+      <span class="mx-6">&bull; SELECT YOUR VEHICLE TO BROWSE COMPATIBLE ACCESSORIES</span>
+    </div>
+  </div>
+
+  <!-- 2. MINIMALIST ZARA HEADER -->
+  <header class="zara-header px-6 sm:px-12 py-5">
+    <div class="max-w-[1600px] mx-auto flex items-center justify-between">
+      
+      <!-- Brand Logo -->
+      <div>
+        <a href="index.html" class="inline-block">
+          <h1 class="zara-wordmark text-3xl sm:text-4xl uppercase text-black font-extrabold tracking-tight">
+            KOKO
+          </h1>
+          <span class="block text-[8px] sm:text-[9px] tracking-[0.3em] uppercase text-neutral-500 font-sans mt-0.5 font-medium">
+            ACCESSORIES &bull; ATELIER
+          </span>
+        </a>
+      </div>
+
+      <!-- Right: Search & Admin Link -->
+      <div class="flex items-center gap-6">
+        <!-- Live Search -->
+        <div class="relative hidden sm:block w-64 md:w-80">
+          <input 
+            type="text" 
+            id="searchInput" 
+            placeholder="SEARCH BY CAR MODEL OR PART..." 
+            class="w-full text-xs uppercase tracking-zara border-b border-black py-1.5 focus:outline-none placeholder-neutral-400 font-medium bg-transparent"
+          />
+        </div>
+
+        <!-- Admin Portal Link -->
+        <a 
+          href="admin.html" 
+          class="text-[11px] uppercase tracking-zara-wide font-semibold text-neutral-500 hover:text-black border border-neutral-300 hover:border-black px-3 py-1.5 transition-colors"
+          title="Open Admin Dashboard to add photos, categories, or accessories"
+        >
+          ADMIN PORTAL &rarr;
+        </a>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- 3. MOBILE SEARCH BAR -->
+  <div class="sm:hidden px-6 pt-4 pb-2">
+    <input 
+      type="text" 
+      id="searchInputMobile" 
+      oninput="document.getElementById('searchInput').value = this.value; state.searchQuery = this.value; renderAccessories();"
+      placeholder="SEARCH CAR MODEL (ELANTRA, C-CLASS, M3...)" 
+      class="w-full text-xs uppercase tracking-zara border-b border-black py-2 focus:outline-none placeholder-neutral-400 bg-transparent"
+    />
+  </div>
+
+  <!-- 4. STEP 1: CHOOSE YOUR CAR (MAIN FEATURE OF THE WEBSITE) -->
+  <section class="max-w-[1600px] mx-auto px-6 sm:px-12 pt-10 pb-8">
+    <div class="text-center max-w-xl mx-auto mb-8">
+      <span class="text-[10px] uppercase tracking-[0.25em] text-neutral-400 font-bold block mb-2">STEP 1 &bull; VEHICLE SELECTOR</span>
+      <h2 class="font-editorial text-3xl sm:text-4xl uppercase tracking-wider text-black">
+        CHOOSE YOUR CAR
+      </h2>
+      <p class="text-xs uppercase tracking-zara text-neutral-500 mt-2 font-light">
+        Click your vehicle make to see only the accessories that fit your car.
+      </p>
+    </div>
+
+    <!-- Car Brands Cards Grid -->
+    <div id="carBrandsContainer" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
+      <!-- Rendered dynamically via app.js -->
+    </div>
+  </section>
+
+  <!-- 5. ACTIVE VEHICLE BANNER (Shown when a brand is selected) -->
+  <div id="activeCarBanner" class="hidden max-w-[1600px] mx-auto px-6 sm:px-12 mb-6">
+    <div class="bg-black text-white px-5 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <span class="w-2 h-2 rounded-full bg-white animate-pulse"></span>
+        <span class="text-[11px] uppercase tracking-zara-wide text-neutral-300">CURRENTLY VIEWING ACCESSORIES FOR:</span>
+        <span id="activeCarTitle" class="text-xs uppercase font-bold tracking-widest text-white">HYUNDAI</span>
+      </div>
+      <button 
+        onclick="resetCarFilter()" 
+        class="text-[10px] uppercase tracking-zara-wide text-neutral-300 hover:text-white underline"
+      >
+        SHOW ALL CARS &times;
+      </button>
+    </div>
+  </div>
+
+  <!-- 6. ACCESSORIES SHOWCASE SECTION -->
+  <main id="accessoriesSection" class="max-w-[1600px] mx-auto px-6 sm:px-12 pt-4 pb-24">
+    
+    <!-- Category Tabs & Item Counter -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-neutral-200 mb-8">
+      
+      <!-- Category Tabs -->
+      <div id="categoriesContainer" class="flex flex-wrap items-center gap-2 overflow-x-auto pb-1">
+        <!-- Rendered dynamically -->
+      </div>
+
+      <!-- Item Counter -->
+      <div id="itemCountDisplay" class="text-[11px] uppercase tracking-zara-wide text-neutral-500 font-semibold flex-shrink-0">
+        LOADING ACCESSORIES...
+      </div>
+
+    </div>
+
+    <!-- Product Grid -->
+    <div 
+      id="accessoriesGrid" 
+      class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-10"
+    >
+      <!-- Rendered dynamically via app.js -->
+    </div>
+
+  </main>
+
+  <!-- 7. FOOTER -->
+  <footer class="border-t border-neutral-200 py-12 px-6 sm:px-12 bg-neutral-50 text-neutral-600">
+    <div class="max-w-[1600px] mx-auto flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left">
+      <div>
+        <h4 class="font-editorial text-xl uppercase font-bold text-black mb-1">KOKO ACCESSORIES</h4>
+        <p class="text-[11px] uppercase tracking-wide text-neutral-500">
+          Dedicated car accessories catalogue. Engineered specifically for each vehicle chassis.
+        </p>
+      </div>
+
+      <div class="flex items-center gap-6 text-[11px] uppercase tracking-zara font-medium">
+        <a href="#accessoriesSection" onclick="window.scrollTo({top: 0, behavior: 'smooth'}); return false;" class="hover:text-black">BACK TO TOP</a>
+        <a href="admin.html" class="hover:text-black font-semibold text-black underline">ADMIN LOGIN (ADD / REMOVE PHOTOS)</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- 8. PRODUCT DETAIL MODAL (No cart, pure photo preview & WhatsApp inquiry) -->
+  <div id="detailModal" class="modal-overlay" onclick="if(event.target === this) closeDetailModal()">
+    <div class="modal-box relative">
+      <button 
+        onclick="closeDetailModal()" 
+        class="absolute top-4 right-4 z-20 bg-white/90 hover:bg-black hover:text-white w-8 h-8 flex items-center justify-center text-xl transition-colors font-light"
+      >
+        &times;
+      </button>
+      <div id="detailContent">
+        <!-- Rendered dynamically by app.js openDetailModal() -->
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <div id="toastNotice" class="toast-notice">Notice</div>
+
+  <!-- Scripts -->
+  <script src="products.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

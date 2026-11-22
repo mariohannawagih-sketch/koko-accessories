@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KOKO ACCESSORIES &mdash; Admin Management Portal</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Google Fonts: Bodoni Moda & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..900;1,6..96,400..900&family=Inter:wght@200;300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="bg-[#fafafa] text-black">
+
+  <!-- ==========================================
+       1. ADMIN LOGIN SCREEN (Password / Gmail Gate)
+       ========================================== -->
+  <div id="loginGate" class="min-h-screen flex items-center justify-center p-6 bg-neutral-100">
+    <div class="bg-white border border-neutral-300 p-8 sm:p-12 w-full max-w-md shadow-xl">
+      <div class="text-center mb-8">
+        <h1 class="zara-wordmark text-3xl font-extrabold tracking-tight uppercase mb-1">KOKO</h1>
+        <span class="block text-[9px] tracking-[0.3em] uppercase text-neutral-400 font-sans font-semibold">
+          ADMIN ATELIER PORTAL
+        </span>
+      </div>
+
+      <p class="text-xs uppercase text-neutral-500 tracking-wide text-center mb-6">
+        Sign in with your admin credentials to manage accessories, photos, and categories.
+      </p>
+
+      <form id="adminLoginForm" onsubmit="handleAdminLogin(event)" class="space-y-4">
+        <div>
+          <label class="block text-[10px] uppercase font-bold tracking-zara-wide text-neutral-600 mb-1">
+            Admin Gmail / Email
+          </label>
+          <input 
+            type="email" 
+            id="adminEmailInput" 
+            value="admin@koko.com"
+            required
+            class="w-full border border-neutral-300 p-3 text-xs focus:border-black focus:outline-none" 
+            placeholder="your-admin@gmail.com"
+          />
+        </div>
+
+        <div>
+          <label class="block text-[10px] uppercase font-bold tracking-zara-wide text-neutral-600 mb-1">
+            Admin Password
+          </label>
+          <input 
+            type="password" 
+            id="adminPassInput" 
+            value="koko2026"
+            required
+            class="w-full border border-neutral-300 p-3 text-xs focus:border-black focus:outline-none" 
+            placeholder="Password"
+          />
+          <span class="block text-[10px] text-neutral-400 mt-1">Default Password: <code>koko2026</code></span>
+        </div>
+
+        <button type="submit" class="btn-black w-full py-3.5 text-xs font-semibold mt-4">
+          SIGN IN TO ADMIN PANEL
+        </button>
+
+        <div class="text-center pt-4">
+          <a href="index.html" class="text-[11px] uppercase tracking-zara text-neutral-500 hover:text-black underline">
+            &larr; Back to Storefront
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       2. ADMIN DASHBOARD (When Logged In)
+       ========================================== -->
+  <div id="adminDashboard" class="hidden min-h-screen flex flex-col">
+    
+    <!-- Top Admin Header -->
+    <header class="bg-black text-white px-6 sm:px-12 py-4 flex flex-wrap items-center justify-between gap-4">
+      <div class="flex items-center gap-4">
+        <h2 class="zara-wordmark text-2xl tracking-tight uppercase">KOKO</h2>
+        <span class="text-[9px] uppercase tracking-[0.25em] text-neutral-400 font-semibold border-l border-neutral-700 pl-4 hidden sm:inline">
+          ADMIN CONTROL CENTER
+        </span>
+      </div>
+
+      <!-- Live Auto-Save to D: Drive Status Badge -->
+      <div id="syncStatusBadge" class="flex items-center gap-2 px-3 py-1 bg-neutral-900 border border-neutral-800">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span class="text-[10px] text-emerald-300 font-bold tracking-zara uppercase">
+          AUTO-SAVING TO D: DRIVE
+        </span>
+      </div>
+
+      <div class="flex items-center gap-4 text-xs uppercase tracking-zara">
+        <a href="index.html" target="_blank" class="text-neutral-300 hover:text-white underline">
+          VIEW LIVE SITE &rarr;
+        </a>
+        <button onclick="handleAdminLogout()" class="border border-neutral-700 hover:border-white px-3 py-1.5 text-[10px]">
+          LOGOUT
+        </button>
+      </div>
+    </header>
+
+    <!-- Admin Nav Tabs -->
+    <div class="bg-white border-b border-neutral-200 px-6 sm:px-12 flex gap-6 overflow-x-auto">
+      <button 
+        id="tabBtnAccessories" 
+        onclick="switchAdminTab('accessories')" 
+        class="py-4 text-xs uppercase tracking-zara-wide font-bold border-b-2 border-black text-black"
+      >
+        ACCESSORIES LIST &amp; UPLOAD
+      </button>
+      <button 
+        id="tabBtnCategories" 
+        onclick="switchAdminTab('categories')" 
+        class="py-4 text-xs uppercase tracking-zara-wide font-medium text-neutral-500 hover:text-black border-b-2 border-transparent"
+      >
+        MANAGE CATEGORIES
+      </button>
+      <button 
+        id="tabBtnBrands" 
+        onclick="switchAdminTab('brands')" 
+        class="py-4 text-xs uppercase tracking-zara-wide font-medium text-neutral-500 hover:text-black border-b-2 border-transparent"
+      >
+        MANAGE CAR BRANDS
+      </button>
+      <button 
+        id="tabBtnExport" 
+        onclick="switchAdminTab('export')" 
+        class="py-4 text-xs uppercase tracking-zara-wide font-medium text-neutral-500 hover:text-black border-b-2 border-transparent"
+      >
+        EXPORT / BACKUP
+      </button>
+    </div>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 max-w-[1500px] w-full mx-auto p-6 sm:p-10">
+
+      <!-- ==============================================
+           TAB 1: ACCESSORIES MANAGER
+           ============================================== -->
+      <div id="tabContentAccessories">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+          <div>
+            <h3 class="font-editorial text-2xl uppercase tracking-wider text-black">CAR ACCESSORIES</h3>
+            <p class="text-xs uppercase text-neutral-500 tracking-zara">
+              Upload photos (Drag &amp; Drop), set car fitment, add or remove accessories.
+            </p>
+          </div>
+          <button onclick="openAddAccessoryModal()" class="btn-black py-3 px-6 text-xs">
+            + ADD NEW ACCESSORY
+          </button>
+        </div>
+
+        <!-- Filter Bar in Admin -->
+        <div class="bg-white p-4 border border-neutral-200 mb-6 flex flex-wrap gap-4 items-center justify-between">
+          <div class="flex items-center gap-3">
+            <span class="text-[10px] uppercase font-bold tracking-zara text-neutral-500">FILTER BY CAR:</span>
+            <select id="adminFilterBrand" onchange="renderAdminAccessoriesTable()" class="border border-neutral-300 p-2 text-xs uppercase">
+              <!-- Dynamically populated -->
+            </select>
+          </div>
+          <span id="adminTotalItemsBadge" class="text-xs uppercase tracking-zara font-semibold text-neutral-500">
+            0 ACCESSORIES
+          </span>
+        </div>
+
+        <!-- Table / Cards of Accessories -->
+        <div class="bg-white border border-neutral-200 overflow-x-auto">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr class="bg-neutral-100 border-b border-neutral-200 uppercase tracking-zara text-[10px] text-neutral-500">
+                <th class="p-4 w-20">PHOTO</th>
+                <th class="p-4">ACCESSORY NAME</th>
+                <th class="p-4">CAR BRAND</th>
+                <th class="p-4">COMPATIBILITY FITMENT</th>
+                <th class="p-4">CATEGORY</th>
+                <th class="p-4 text-right">ACTION</th>
+              </tr>
+            </thead>
+            <tbody id="adminAccessoriesTableBody">
+              <!-- Rendered dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ==============================================
+           TAB 2: CATEGORIES MANAGER
+           ============================================== -->
+      <div id="tabContentCategories" class="hidden">
+        <div class="max-w-2xl">
+          <h3 class="font-editorial text-2xl uppercase tracking-wider text-black mb-1">MANAGE CATEGORIES</h3>
+          <p class="text-xs uppercase text-neutral-500 tracking-zara mb-6">
+            Add new categories or delete existing ones. Changes update the customer storefront immediately.
+          </p>
+
+          <!-- Add Category Form -->
+          <div class="bg-white p-6 border border-neutral-200 mb-8 flex gap-3">
+            <input 
+              type="text" 
+              id="newCategoryInput" 
+              placeholder="e.g. CARBON SPOILERS, EXHAUST TIPS, MATS..." 
+              class="flex-1 border border-neutral-300 p-3 text-xs uppercase tracking-wide focus:border-black focus:outline-none"
+            />
+            <button onclick="handleAddNewCategory()" class="btn-black py-3 px-6 text-xs whitespace-nowrap">
+              + ADD CATEGORY
+            </button>
+          </div>
+
+          <!-- Existing Categories List -->
+          <div class="bg-white border border-neutral-200">
+            <div class="p-4 bg-neutral-100 border-b border-neutral-200 text-[10px] uppercase font-bold tracking-zara text-neutral-500">
+              ACTIVE CATEGORIES
+            </div>
+            <ul id="adminCategoriesList" class="divide-y divide-neutral-200">
+              <!-- Rendered dynamically -->
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==============================================
+           TAB 3: CAR BRANDS MANAGER
+           ============================================== -->
+      <div id="tabContentBrands" class="hidden">
+        <div class="max-w-2xl">
+          <h3 class="font-editorial text-2xl uppercase tracking-wider text-black mb-1">MANAGE CAR BRANDS</h3>
+          <p class="text-xs uppercase text-neutral-500 tracking-zara mb-6">
+            Add any car make (e.g. Hyundai, Mercedes, BMW, Toyota, Honda, Kia, Nissan, etc.).
+          </p>
+
+          <!-- Add Brand Form -->
+          <div class="bg-white p-6 border border-neutral-200 mb-8 flex gap-3">
+            <input 
+              type="text" 
+              id="newBrandInput" 
+              placeholder="e.g. HONDA, NISSAN, VOLKSWAGEN..." 
+              class="flex-1 border border-neutral-300 p-3 text-xs uppercase tracking-wide focus:border-black focus:outline-none"
+            />
+            <button onclick="handleAddNewBrand()" class="btn-black py-3 px-6 text-xs whitespace-nowrap">
+              + ADD CAR BRAND
+            </button>
+          </div>
+
+          <!-- Existing Brands List -->
+          <div class="bg-white border border-neutral-200">
+            <div class="p-4 bg-neutral-100 border-b border-neutral-200 text-[10px] uppercase font-bold tracking-zara text-neutral-500">
+              SUPPORTED CAR BRANDS
+            </div>
+            <ul id="adminBrandsList" class="divide-y divide-neutral-200">
+              <!-- Rendered dynamically -->
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==============================================
+           TAB 4: EXPORT / BACKUP
+           ============================================== -->
+      <div id="tabContentExport" class="hidden">
+        <div class="max-w-xl bg-white p-8 border border-neutral-200">
+          <h3 class="font-editorial text-2xl uppercase tracking-wider text-black mb-2">EXPORT CATALOG DATA</h3>
+          <p class="text-xs uppercase text-neutral-600 tracking-zara leading-relaxed mb-6">
+            All your uploaded photos, new accessories, and category changes are saved instantly in your browser. 
+            You can also download the updated <code>products.js</code> file to save it permanently into your project folder.
+          </p>
+
+          <div class="space-y-4">
+            <button onclick="exportUpdatedProductsJS()" class="btn-black w-full py-4 text-xs font-semibold">
+              DOWNLOAD UPDATED PRODUCTS.JS FILE
+            </button>
+            <button onclick="handleResetToDefaultData()" class="btn-outline w-full py-3 text-xs text-red-600 border-red-300 hover:bg-red-600 hover:text-white">
+              RESET TO DEFAULT SAMPLE DATA
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- ==============================================
+       ADD / EDIT ACCESSORY MODAL (WITH DRAG & DROP)
+       ============================================== -->
+  <div id="accessoryModal" class="modal-overlay" onclick="if(event.target === this) closeAccessoryModal()">
+    <div class="modal-box max-w-2xl p-6 sm:p-10">
+      
+      <div class="flex items-center justify-between pb-4 border-b border-neutral-200 mb-6">
+        <div>
+          <span class="text-[10px] uppercase font-bold tracking-zara text-neutral-400">ACCESSORY ATELIER</span>
+          <h3 id="accessoryModalTitle" class="font-editorial text-2xl uppercase tracking-wider text-black">
+            ADD NEW ACCESSORY
+          </h3>
+        </div>
+        <button onclick="closeAccessoryModal()" class="text-2xl font-light hover:text-neutral-500">&times;</button>
+      </div>
+
+      <form id="accessoryForm" onsubmit="handleSaveAccessory(event)" class="space-y-4">
+        <input type="hidden" id="formAccessoryId" value="">
+
+        <!-- Name -->
+        <div>
+          <label class="block text-[10px] uppercase font-bold tracking-zara text-neutral-600 mb-1">
+            Accessory Title / Name *
+          </label>
+          <input 
+            type="text" 
+            id="formAccessoryName" 
+            required
+            placeholder="e.g. N-Line Forged Carbon Steering Wheel" 
+            class="w-full border border-neutral-300 p-2.5 text-xs uppercase tracking-wide focus:border-black focus:outline-none"
+          />
+        </div>
+
+        <!-- Car Brand & Category (Grid) -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-[10px] uppercase font-bold tracking-zara text-neutral-600 mb-1">
+              Car Brand *
+            </label>
+            <select id="formAccessoryBrand" required class="w-full border border-neutral-300 p-2.5 text-xs uppercase focus:border-black focus:outline-none">
+              <!-- Dynamically populated -->
+            </select>
+          </div>
+          <div>
+            <label class="block text-[10px] uppercase font-bold tracking-zara text-neutral-600 mb-1">
+              Category *
+            </label>
+            <select id="formAccessoryCategory" required class="w-full border border-neutral-300 p-2.5 text-xs uppercase focus:border-black focus:outline-none">
+              <!-- Dynamically populated -->
+            </select>
+          </div>
+        </div>
+
+        <!-- Fitment -->
+        <div>
+          <label class="block text-[10px] uppercase font-bold tracking-zara text-neutral-600 mb-1">
+            Compatible Car Models &amp; Years *
+          </label>
+          <input 
+            type="text" 
+            id="formAccessoryFitment" 
+            required
+            placeholder="e.g. Hyundai Elantra N, Sonata N-Line, Tucson (2020-2026)" 
+            class="w-full border border-neutral-300 p-2.5 text-xs uppercase tracking-wide focus:border-black focus:outline-none"
+          />
+        </div>
+
+        <!-- Description -->
+        <div>
+          <label class="block text-[10px] uppercase font-bold tracking-zara text-neutral-600 mb-1">
+            Description / Specifications
+          </label>
+          <textarea 
+            id="formAccessoryDesc" 
+            rows="2" 
+            placeholder="Materials, finish, touch feel, installation details..." 
+            class="w-full border border-neutral-300 p-2.5 text-xs uppercase tracking-wide focus:border-black focus:outline-none"
+          ></textarea>
+        </div>
+
+        <!-- MULTI-PHOTO UPLOAD ZONE (FRONT, BACK, ANGLES) -->
+        <div>
+          <div class="flex items-center justify-between mb-1">
+            <label class="block text-[10px] uppercase font-bold tracking-zara text-neutral-600">
+              Accessory Photos (Add Multiple: Front, Back, Angles) *
+            </label>
+            <span class="text-[9px] text-neutral-400 uppercase">You can select or drop multiple photos</span>
+          </div>
+          
+          <div 
+            id="dragDropZone" 
+            class="drag-drop-zone rounded-none"
+            ondragover="handleDragOver(event)"
+            ondragleave="handleDragLeave(event)"
+            ondrop="handleDropFile(event)"
+            onclick="document.getElementById('fileUploadInput').click()"
+          >
+            <input 
+              type="file" 
+              id="fileUploadInput" 
+              accept="image/*" 
+              multiple
+              class="hidden" 
+              onchange="handleFileSelect(event)"
+            />
+            <svg class="w-8 h-8 mx-auto text-neutral-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+            <p class="text-xs uppercase font-semibold text-black tracking-zara">
+              + DRAG &amp; DROP PHOTOS HERE (FRONT &amp; BACK)
+            </p>
+            <p class="text-[10px] uppercase text-neutral-400 mt-1">
+              Select multiple files or drop them one by one (.jpg, .png, .webp)
+            </p>
+          </div>
+
+          <!-- Multi-Photo Gallery Preview Container -->
+          <div id="photoPreviewContainer" class="hidden mt-3 p-3 bg-neutral-50 border border-neutral-200">
+            <div class="flex items-center justify-between pb-2 border-b border-neutral-200 mb-2">
+              <span class="text-[10px] uppercase font-bold tracking-zara text-black">
+                LOADED PHOTOS: <span id="photoCountBadge" class="text-neutral-500 font-semibold">(0)</span>
+              </span>
+              <button type="button" onclick="clearAllPhotos()" class="text-[9px] text-red-600 uppercase font-semibold hover:underline">
+                Clear All Photos
+              </button>
+            </div>
+            
+            <!-- Grid of photo thumbnails -->
+            <div id="photosListContainer" class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+              <!-- Rendered dynamically by renderPhotosGallery() -->
+            </div>
+          </div>
+
+          <!-- Or paste image URL -->
+          <div class="mt-2.5 flex items-center gap-2">
+            <input 
+              type="text" 
+              id="formImageUrlInput" 
+              placeholder="Or paste image web link (https://... or images/part.jpg)" 
+              class="flex-1 border border-neutral-300 p-2 text-xs font-mono focus:border-black focus:outline-none"
+            />
+            <button 
+              type="button" 
+              onclick="handleAddUrlPhoto()" 
+              class="btn-outline py-2 px-3 text-[10px] whitespace-nowrap"
+            >
+              + ADD PHOTO LINK
+            </button>
+          </div>
+        </div>
+
+        <div class="pt-4 border-t border-neutral-200 flex gap-3">
+          <button type="submit" class="flex-1 btn-black py-3 text-xs font-semibold">
+            SAVE ACCESSORY
+          </button>
+          <button type="button" onclick="closeAccessoryModal()" class="btn-outline py-3 text-xs">
+            CANCEL
+          </button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <div id="toastNotice" class="toast-notice">Notice</div>
+
+  <!-- Scripts -->
+  <script src="products.js"></script>
+  <script src="admin.js"></script>
+</body>
+</html>
