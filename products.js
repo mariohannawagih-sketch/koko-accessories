@@ -1,7 +1,7 @@
 /**
  * KOKO ACCESSORIES - CATALOG DATABASE
  * Auto-saved directly to: D:\projects\koko accessories\products.js
- * Last updated: 2026-11-21 22:55:01
+ * Last updated: 2026-11-22 09:07:30
  */
 
 const DEFAULT_CAR_BRANDS = [
@@ -555,6 +555,361 @@ const DEFAULT_PRODUCTS = [
     "image": "images/cupra_brake_caliper_covers_copper.jpg",
     "images": [
       "images/cupra_brake_caliper_covers_copper.jpg"
+    ]
+  },
+  {
+    "id": "mini-cooper-s-red-trunk-badge",
+    "name": "MINI COOPER S RED METAL TRUNK EMBLEM",
+    "brand": "minicooper",
+    "category": "carnameslogo",
+    "fitment": "Mini Cooper S F54, F55, F56, F57, Countryman F60, R56",
+    "description": "Chassis-grade alloy 'S' rear emblem finished in brilliant gloss red enamel with mirror chrome outline. Automotive grade 3M adhesive backing.",
+    "image": "images/mini_cooper_s_red_trunk_badge_front.jpg",
+    "images": [
+      "images/mini_cooper_s_red_trunk_badge_front.jpg",
+      "images/mini_cooper_s_red_trunk_badge_angle.jpg",
+      "images/mini_cooper_s_red_trunk_badge_pair.jpg",
+      "images/mini_cooper_s_union_jack_badge_pair.jpg"
+    ]
+  },
+  {
+    "id": "mini-cooper-s-chrome-letters-trunk",
+    "name": "MINI COOPER S REAR TRUNK CHROME LETTERING",
+    "brand": "minicooper",
+    "category": "carnameslogo",
+    "fitment": "Mini Cooper S Hatch, Clubman, Countryman, Convertible",
+    "description": "Individual factory-spacing OEM replacement letters in triple-chrome plated alloy with red accent 'S' for trunk lid customization.",
+    "image": "images/mini_cooper_s_chrome_letters_trunk.jpg",
+    "images": [
+      "images/mini_cooper_s_chrome_letters_trunk.jpg"
+    ]
+  },
+  {
+    "id": "mini-countryman-letters-black",
+    "name": "MINI COUNTRYMAN GLOSS BLACK TRUNK LETTERS",
+    "brand": "minicooper",
+    "category": "carnameslogo",
+    "fitment": "Mini Countryman F60, R60 (All Generations)",
+    "description": "Individual gloss piano black tailgate block letters with pre-aligned spacing template for rear trunk lid.",
+    "image": "images/mini_countryman_letters_black_flat.jpg",
+    "images": [
+      "images/mini_countryman_letters_black_flat.jpg",
+      "images/mini_countryman_letters_black_angled.jpg",
+      "images/mini_countryman_letters_black_strip.jpg",
+      "images/mini_countryman_letters_black_display.jpg"
+    ]
+  },
+  {
+    "id": "mini-clubman-letters-black",
+    "name": "MINI CLUBMAN GLOSS BLACK TRUNK LETTERS",
+    "brand": "minicooper",
+    "category": "carnameslogo",
+    "fitment": "Mini Clubman F54, R55 Split Rear Doors",
+    "description": "Full gloss piano black individual lettering kit engineered specifically for Clubman split barn-door rear tailgate.",
+    "image": "images/mini_clubman_letters_black_strip.jpg",
+    "images": [
+      "images/mini_clubman_letters_black_strip.jpg"
+    ]
+  },
+  {
+    "id": "mini-wings-gloss-black-grille",
+    "name": "MINI GLOSS BLACK WINGS FRONT GRILLE EMBLEM",
+    "brand": "minicooper",
+    "category": "carnameslogo",
+    "fitment": "Mini Cooper F55, F56, F57 LCI & LCI2 Front Grille",
+    "description": "OEM-fit front radiator grille wing badge in high-gloss piano black with factory rear mounting tabs and locking clips.",
+    "image": "images/mini_wings_gloss_black_front.jpg",
+    "images": [
+      "images/mini_wings_gloss_black_front.jpg",
+      "images/mini_wings_gloss_black_back_tabs.jpg",
+      "images/mini_wings_gloss_black_alt_front.jpg",
+      "images/mini_wings_gloss_black_alt_back.jpg"
+    ]
+  },
+  {
+    "id": "mini-wings-matte-black-pair",
+    "name": "MINI MATTE BLACK WINGS EMBLEM SET (HOOD & TRUNK)",
+    "brand": "minicooper",
+    "category": "carnameslogo",
+    "fitment": "Mini Cooper R56, R57, R58, F55, F56, F54, F60",
+    "description": "Pair of tactical stealth matte black Mini wings badges for hood front and boot rear de-chroming.",
+    "image": "images/mini_wings_matte_black_pair.jpg",
+    "images": [
+      "images/mini_wings_matte_black_pair.jpg",
+      "images/mini_wings_matte_black_single.jpg",
+      "images/mini_wings_matte_black_with_cap.jpg",
+      "images/mini_wings_matte_black_display.jpg"
+    ]
+  },
+  {
+    "id": "mini-wings-chrome-oem-pair",
+    "name": "MINI CHROME WINGS OEM EMBLEM PAIR (HOOD & BOOT)",
+    "brand": "minicooper",
+    "category": "carnameslogo",
+    "fitment": "Mini One, Cooper, Cooper S, JCW (All Chassis)",
+    "description": "Factory specification brilliant mirror chrome winged insignia with deep black high-gloss center medallion.",
+    "image": "images/mini_wings_chrome_front_closeup.jpg",
+    "images": [
+      "images/mini_wings_chrome_front_closeup.jpg",
+      "images/mini_wings_chrome_pair.jpg",
+      "images/mini_wings_chrome_pack_large.jpg",
+      "images/mini_wings_chrome_pack_small.jpg",
+      "images/mini_wings_chrome_display.jpg"
+    ]
+  },
+  {
+    "id": "mini-wings-black-red-sport",
+    "name": "MINI GLOSS BLACK & RED WINGS SPORT EMBLEM",
+    "brand": "minicooper",
+    "category": "carnameslogo",
+    "fitment": "Mini Cooper S, JCW F54, F55, F56, F57, F60",
+    "description": "Performance edition wings emblem featuring high-gloss piano black outer frame with striking crimson red center ring.",
+    "image": "images/mini_wings_black_red_closeup.jpg",
+    "images": [
+      "images/mini_wings_black_red_closeup.jpg",
+      "images/mini_wings_black_red_pair.jpg"
+    ]
+  },
+  {
+    "id": "mini-wings-crimson-red-edition",
+    "name": "MINI CRIMSON RED WINGS EDITION EMBLEM",
+    "brand": "minicooper",
+    "category": "carnameslogo",
+    "fitment": "Mini Cooper S, John Cooper Works (Hood / Trunk)",
+    "description": "Special edition winged badge in deep metallic crimson red with contrasting gloss black Mini wordmark center.",
+    "image": "images/mini_wings_crimson_red_closeup.jpg",
+    "images": [
+      "images/mini_wings_crimson_red_closeup.jpg"
+    ]
+  },
+  {
+    "id": "mini-jcw-oval-chrome-red-emblem",
+    "name": "MINI JOHN COOPER WORKS (JCW) CHROME OVAL EMBLEM",
+    "brand": "minicooper",
+    "category": "carnameslogo",
+    "fitment": "Front Grille / Tailgate / Side Scuttles",
+    "description": "Precision embossed John Cooper Works motorsport insignia with baked enamel red highlight on polished chrome alloy plate.",
+    "image": "images/mini_jcw_oval_chrome_red_trio.jpg",
+    "images": [
+      "images/mini_jcw_oval_chrome_red_trio.jpg",
+      "images/mini_jcw_oval_chrome_red_pair.jpg",
+      "images/mini_jcw_oval_chrome_red_single.jpg",
+      "images/mini_jcw_oval_chrome_red_pack.jpg"
+    ]
+  },
+  {
+    "id": "mini-jcw-blackout-grille-emblem",
+    "name": "MINI JCW BLACKOUT FRONT GRILLE EMBLEM KIT",
+    "brand": "minicooper",
+    "category": "carnameslogo",
+    "fitment": "Mini Cooper S / JCW Front Radiator Honeycomb Grille",
+    "description": "Tactical blackout John Cooper Works metal badge equipped with dual bolt-through grille bracket hardware.",
+    "image": "images/mini_jcw_blackout_grille_hardware.jpg",
+    "images": [
+      "images/mini_jcw_blackout_grille_hardware.jpg",
+      "images/mini_jcw_blackout_emblem_single.jpg",
+      "images/mini_jcw_blackout_badge_wide.jpg"
+    ]
+  },
+  {
+    "id": "mini-motorsport-international-badge",
+    "name": "MINI MOTORSPORT INTERNATIONAL LIMITED BADGE",
+    "brand": "minicooper",
+    "category": "carnameslogo",
+    "fitment": "Rear Tailgate / Dashboard / Fender",
+    "description": "Brushed aluminum motorsport commemorative plate with racing checkered flag and engraved serial typography.",
+    "image": "images/mini_motorsport_international_badge.jpg",
+    "images": [
+      "images/mini_motorsport_international_badge.jpg"
+    ]
+  },
+  {
+    "id": "mini-jcw-wheel-center-caps",
+    "name": "MINI JCW WHEEL CENTER CAPS WITH RED RING (SET OF 4)",
+    "brand": "minicooper",
+    "category": "medals",
+    "fitment": "OEM & Aftermarket Mini Alloy Wheels (54mm / 56mm)",
+    "description": "Set of 4 John Cooper Works wheel hub center caps with piano black face and vivid motorsport red perimeter accent ring.",
+    "image": "images/mini_jcw_wheel_center_caps_set.jpg",
+    "images": [
+      "images/mini_jcw_wheel_center_caps_set.jpg",
+      "images/mini_jcw_wheel_center_cap_installed.jpg"
+    ]
+  },
+  {
+    "id": "mini-wheel-caps-piano-black",
+    "name": "MINI PIANO BLACK WHEEL CENTER HUB CAPS (SET OF 4)",
+    "brand": "minicooper",
+    "category": "medals",
+    "fitment": "Mini Cooper Alloy Rims (All Generations)",
+    "description": "Full gloss piano black concave wheel center caps with chrome embossed Mini typography for clean stealth wheel styling.",
+    "image": "images/mini_wheel_caps_piano_black_quad.jpg",
+    "images": [
+      "images/mini_wheel_caps_piano_black_quad.jpg",
+      "images/mini_wheel_caps_piano_black_set5.jpg"
+    ]
+  },
+  {
+    "id": "mini-antenna-union-jack",
+    "name": "MINI SHORT ROOF SPORT ANTENNA (UNION JACK)",
+    "brand": "minicooper",
+    "category": "tobb",
+    "fitment": "All Mini Cooper Roof Antenna Mounts (M5 & M6 Thread)",
+    "description": "10.5cm CNC billet aluminum and carbon fiber short stubby roof antenna featuring classic British Union Jack flag motif.",
+    "image": "images/mini_antenna_union_jack_closeup.jpg",
+    "images": [
+      "images/mini_antenna_union_jack_closeup.jpg",
+      "images/mini_antenna_union_jack_trio.jpg",
+      "images/mini_antenna_union_jack_quad.jpg"
+    ]
+  },
+  {
+    "id": "mini-antenna-checkered",
+    "name": "MINI SHORT ROOF SPORT ANTENNA (CHECKERED RACING)",
+    "brand": "minicooper",
+    "category": "tobb",
+    "fitment": "All Mini Cooper Roof Antenna Mounts (M5 & M6 Thread)",
+    "description": "High-density carbon fiber and alloy stubby aerial with motorsport checkered flag pattern for improved clearance and aesthetics.",
+    "image": "images/mini_antenna_checkered_closeup.jpg",
+    "images": [
+      "images/mini_antenna_checkered_closeup.jpg"
+    ]
+  },
+  {
+    "id": "mini-antenna-paul-smith",
+    "name": "MINI SHORT ROOF SPORT ANTENNA (PAUL SMITH STRIPES)",
+    "brand": "minicooper",
+    "category": "tobb",
+    "fitment": "All Mini Cooper Roof Antenna Mounts (M5 & M6 Thread)",
+    "description": "Designer edition short stubby roof antenna featuring iconic designer multi-color vertical motorsport stripes.",
+    "image": "images/mini_antenna_paul_smith_closeup.jpg",
+    "images": [
+      "images/mini_antenna_paul_smith_closeup.jpg"
+    ]
+  },
+  {
+    "id": "mini-model-pair-union-jack",
+    "name": "MINI COOPER UNION JACK DIECAST DESK & COCKPIT MODEL (PAIR)",
+    "brand": "minicooper",
+    "category": "medals",
+    "fitment": "Interior Dashboard / Display / Collector Fob",
+    "description": "Precision metal diecast 1:36 scale Mini Cooper models in Chili Red and British Racing Green with functioning doors and Union Jack roof graphics.",
+    "image": "images/mini_model_pair_front_doors_open.jpg",
+    "images": [
+      "images/mini_model_pair_front_doors_open.jpg",
+      "images/mini_model_red_union_jack_closeup.jpg",
+      "images/mini_model_green_union_jack_closeup.jpg",
+      "images/mini_model_pair_roof_view.jpg",
+      "images/mini_model_red_rear_view.jpg"
+    ]
+  },
+  {
+    "id": "mini-keychain-cooper-s-red-metal",
+    "name": "MINI COOPER S RED ENAMEL SOLID METAL KEYCHAIN",
+    "brand": "minicooper",
+    "category": "medals",
+    "fitment": "Key Fob / Keyring",
+    "description": "Solid zinc alloy 3D Cooper S letter keychain with baked vibrant red enamel inlay and heavy-duty 360 swivel carabiner.",
+    "image": "images/mini_keychain_cooper_s_red_metal.jpg",
+    "images": [
+      "images/mini_keychain_cooper_s_red_metal.jpg"
+    ]
+  },
+  {
+    "id": "mini-keychain-motorsport-ribbon",
+    "name": "MINI MOTORSPORT GERMAN TRI-COLOR STRAP KEYCHAIN",
+    "brand": "minicooper",
+    "category": "medals",
+    "fitment": "Key Fob / Keyring",
+    "description": "High-tensile woven racing ribbon keychain in German tricolor stripes with laser-engraved Mini metal lock clip.",
+    "image": "images/mini_keychain_motorsport_ribbon.jpg",
+    "images": [
+      "images/mini_keychain_motorsport_ribbon.jpg"
+    ]
+  },
+  {
+    "id": "mini-sports-pedals-aluminum",
+    "name": "MINI SPORT ALUMINUM & RUBBER PEDAL COVER SET",
+    "brand": "minicooper",
+    "category": "padelshifts",
+    "fitment": "Mini Cooper One, S, JCW F54, F55, F56, F57, F60 (Automatic)",
+    "description": "Brushed matte aluminum pedal covers with non-slip rubber studs and laser-engraved Mini wing insignia. Direct clip-on installation.",
+    "image": "images/mini_sports_pedals_aluminum_set.jpg",
+    "images": [
+      "images/mini_sports_pedals_aluminum_set.jpg"
+    ]
+  },
+  {
+    "id": "mini-seatbelt-silencer-clips",
+    "name": "MINI SEATBELT BUCKLE ALARM STOPPER CLIPS (PAIR)",
+    "brand": "minicooper",
+    "category": "seatbelt",
+    "fitment": "All Mini Cooper Seat Belt Buckles",
+    "description": "Heavy-duty matte black alloy seatbelt chime silencer clips with laser-etched Mini wings insignia for off-road/harness use.",
+    "image": "images/mini_seatbelt_silencer_clips_pair.jpg",
+    "images": [
+      "images/mini_seatbelt_silencer_clips_pair.jpg",
+      "images/mini_seatbelt_silencer_clips_display.jpg"
+    ]
+  },
+  {
+    "id": "mini-valve-stem-caps-tool-kit",
+    "name": "MINI TIRE VALVE STEM CAPS & KEYCHAIN TOOL KIT",
+    "brand": "minicooper",
+    "category": "medals",
+    "fitment": "All Mini Cooper Tires / Wheels",
+    "description": "Set of 4 anti-theft hex alloy valve caps with rubber airtight seal rings and matching Mini keychain wrench spanner.",
+    "image": "images/mini_valve_stem_caps_tool_kit.jpg",
+    "images": [
+      "images/mini_valve_stem_caps_tool_kit.jpg"
+    ]
+  },
+  {
+    "id": "mini-key-fob-cover-cyan",
+    "name": "MINI COOPER GLOSS CYAN SMART KEY FOB SHELL",
+    "brand": "minicooper",
+    "category": "keyscover",
+    "fitment": "Mini Cooper 3-Button Round Smart Key (F54, F55, F56, F57, F60)",
+    "description": "Gloss high-impact polycarbonate replacement key shell in vibrant electric cyan blue for round smart key fob.",
+    "image": "images/mini_key_fob_cover_cyan.jpg",
+    "images": [
+      "images/mini_key_fob_cover_cyan.jpg"
+    ]
+  },
+  {
+    "id": "mini-door-handle-scratch-guards",
+    "name": "MINI DOOR HANDLE RECESS ANTI-SCRATCH GUARDS (SET OF 4)",
+    "brand": "minicooper",
+    "category": "tobb",
+    "fitment": "Mini Cooper 3-Door, 5-Door, Clubman, Countryman",
+    "description": "Clear 3D resin protective decals featuring Mini wings typography designed to prevent fingernail scratches under door handles.",
+    "image": "images/mini_door_handle_scratch_guards.jpg",
+    "images": [
+      "images/mini_door_handle_scratch_guards.jpg"
+    ]
+  },
+  {
+    "id": "mini-interior-wing-badges",
+    "name": "MINI INTERIOR COCKPIT WING BADGE EMBLEMS (SET OF 4)",
+    "brand": "minicooper",
+    "category": "steeringwheelsymbols",
+    "fitment": "Mini Cooper Steering Wheel, Speaker Grilles, Dashboard",
+    "description": "Miniature chrome and Union Jack metal alloy wing badges for interior cockpit trim accents and speaker grilles.",
+    "image": "images/mini_interior_wing_badges_set4.jpg",
+    "images": [
+      "images/mini_interior_wing_badges_set4.jpg"
+    ]
+  },
+  {
+    "id": "mini-jcw-door-sill-protectors",
+    "name": "MINI JOHN COOPER WORKS (JCW) CARBON SILL GUARDS (PAIR)",
+    "brand": "minicooper",
+    "category": "tobb",
+    "fitment": "Mini Cooper F55, F56, R56 Door Sills",
+    "description": "Textured carbon fiber vinyl door sill entry guards with red and white John Cooper Works typography and checkered accents.",
+    "image": "images/mini_jcw_door_sill_protectors.jpg",
+    "images": [
+      "images/mini_jcw_door_sill_protectors.jpg"
     ]
   }
 ];
