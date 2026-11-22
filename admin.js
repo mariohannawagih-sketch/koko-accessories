@@ -817,8 +817,8 @@ window.handlePushToGithub = async function() {
     const res = await fetch('/api/git-push', { method: 'POST' });
     const data = await res.json();
     if (res.ok && (data.status === 'ok' || data.status === 'warning')) {
-      alert("✅ تم الرفع بنجاح على GitHub!\nالموقع الحي (Live Site) هيتحدث تلقائياً خلال دقيقة أو دقيقتين.\n\nرابط الموقع الحي:\nhttps://mariohannawagih-sketch.github.io/koko-accessories/");
-      showToast("تم تحديث GitHub والموقع الحي بنجاح!");
+      alert("✅ تم الرفع بنجاح على GitHub!\nالموقع الحي (Cloudflare) هيتحدث تلقائياً خلال ثواني.\n\nرابط الموقع الحي:\nhttps://koko-accessories.pages.dev/");
+      showToast("تم تحديث الموقع الحي بنجاح!");
     } else {
       alert("⚠️ ملحوظة: " + (data.message || data.error || 'تمت العملية'));
     }
