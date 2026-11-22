@@ -117,13 +117,15 @@ function renderCarBrands() {
       ? products.length 
       : products.filter(p => p && (p.brand === b.id || p.brand === 'universal')).length;
 
+    const countLabel = count === 1 ? '1 ACCESSORY' : `${count} ACCESSORIES`;
+
     return `
       <div 
         class="car-brand-card ${isActive ? 'active' : ''}" 
         onclick="selectCarBrand('${b.id}')"
       >
-        <span class="block text-xs font-bold tracking-zara-wide mb-1">${b.name || b.id.toUpperCase()}</span>
-        <span class="block text-[10px] ${isActive ? 'text-neutral-300' : 'text-neutral-400'}">${count} ACCESSORIES</span>
+        <span class="car-brand-name block text-xs mb-1">${b.name || b.id.toUpperCase()}</span>
+        <span class="car-brand-count block">${countLabel}</span>
       </div>
     `;
   }).join('');

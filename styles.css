@@ -109,27 +109,72 @@ body {
   border-bottom: 1px solid rgba(0, 0, 0, 0.08);
 }
 
-/* Car Brand Card in the Selection Section */
+/* Car Brand Card in the Selection Section - German Motorsport Inspired */
 .car-brand-card {
   position: relative;
-  border: 1px solid var(--border-subtle);
-  background: #ffffff;
-  padding: 16px 14px;
+  background: #121316;
+  border: 1px solid #26272e;
+  border-radius: 6px;
+  padding: 1.1rem 0.85rem;
   text-align: center;
   cursor: pointer;
-  transition: all 0.25s var(--ease-zara);
-  text-transform: uppercase;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+  user-select: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+/* German Flag Pinstripe on Top */
+.car-brand-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2.5px;
+  background: linear-gradient(90deg, #111111 0%, #111111 33.3%, #E10600 33.3%, #E10600 66.6%, #FFCC00 66.6%, #FFCC00 100%);
+  border-radius: 6px 6px 0 0;
 }
 
 .car-brand-card:hover {
-  border-color: #000000;
+  background: #17181f;
+  border-color: #3b3d4a;
   transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
 }
 
 .car-brand-card.active {
-  background: #000000;
+  background: #15161b !important;
+  border: 2px solid #E10600 !important;
+  box-shadow: 0 4px 20px rgba(225, 6, 0, 0.28) !important;
+}
+
+.car-brand-card .car-brand-name {
+  font-family: 'Space Grotesk', -apple-system, sans-serif;
+  color: #f3f4f6;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  transition: color 0.15s ease;
+}
+
+.car-brand-card:hover .car-brand-name,
+.car-brand-card.active .car-brand-name {
   color: #ffffff;
-  border-color: #000000;
+}
+
+.car-brand-card .car-brand-count {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  color: #9ca3af;
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  transition: color 0.15s ease;
+}
+
+.car-brand-card.active .car-brand-count {
+  color: #FFCC00 !important;
+  font-weight: 700 !important;
 }
 
 /* Product Card - Clean, Tall, Portrait */
