@@ -305,6 +305,33 @@ function renderAccessories() {
   }).join('');
 }
 
+// Helper to generate full WhatsApp inquiry URL
+function getProductWhatsAppUrl(product, allImages) {
+  let photoLink = '';
+  if (allImages && allImages[0]) {
+    const raw = allImages[0];
+    if (raw.startsWith('http://') || raw.startsWith('https://')) {
+      photoLink = raw;
+    } else {
+      const clean = raw.startsWith('/') ? raw.slice(1) : raw;
+      photoLink = 'https://koko-accessories.pages.dev/' + clean;
+    }
+  }
+
+  const lines = [
+    'Hello KOKO ACCESSORIES!',
+    'How much is this item?',
+    '',
+    `*Item:* ${product.name || 'Accessory'}`,
+    `*Compatibility:* ${product.fitment || 'All Models'}`
+  ];
+  if (photoLink) {
+    lines.push(`*Photo Link:* ${photoLink}`);
+  }
+
+  return 'https://wa.me/201117781675?text=' + encodeURIComponent(lines.join('\n'));
+}
+
 // Multi-Photo Detail Modal
 window.currentModalImages = [];
 window.currentModalImgIndex = 0;
@@ -424,12 +451,7 @@ window.openDetailModal = function(productId) {
         <!-- Inquire Button -->
         <div class="space-y-3 pt-6 border-t border-neutral-200">
           <a 
-            href="https://wa.me/201117781675?text=${encodeURIComponent(`Hello KOKO ACCESSORIES!
-How much is this item? (بكام دي لو سمحت؟)
-
-*Item:* ${product.name}
-*Compatibility:* ${product.fitment || 'All Models'}
-*Photo Link:* ${(allImages && allImages[0] ? (allImages[0].startsWith('http') ? allImages[0] : 'https://koko-accessories.pages.dev/' + allImages[0].replace(/^\\/+/, '')) : '')}`)}"
+            href="${getProductWhatsAppUrl(product, allImages)}"
             target="_blank"
             class="bg-[#25D366] hover:bg-[#20ba5a] text-white w-full py-4 text-xs font-bold text-center flex items-center justify-center gap-2 tracking-zara-wide shadow-md transition-all hover:shadow-lg"
           >

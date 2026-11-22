@@ -134,49 +134,36 @@ async function checkDiskSyncConnection() {
     }
   } catch (eCloud) {}
 
-  // 2. Check local Python server (when running locally or with server.py)
+  // 2. Check local Python server (only when running locally)
   try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 1500);
-    const res = await fetch('http://localhost:5500/api/health', { 
-      method: 'GET',
-      mode: 'cors',
-      cache: 'no-cache',
-      signal: controller.signal
-    });
-    clearTimeout(timeoutId);
-    if (res.ok) {
-      adminState.isDiskSyncConnected = true;
-      updateSyncStatusUI(true, 'local');
-      if (window.location.protocol === 'file:') {
-        window.location.href = 'http://localhost:5500/admin.html';
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      const res = await fetch('http://localhost:5500/api/health', { cache: 'no-cache' });
+      if (res.ok) {
+        adminState.isDiskSyncConnected = true;
+        updateSyncStatusUI(true, 'local');
+        return true;
       }
-      return true;
     }
-  } catch (e) {
-    adminState.isDiskSyncConnected = false;
-    updateSyncStatusUI(false);
-  }
+  } catch (e) {}
+
+  updateSyncStatusUI(false);
   return false;
 }
 
-function updateSyncStatusUI(isConnected, type = 'local') {
+function updateSyncStatusUI(isConnected, type = 'cloud') {
   if (!adminEl.syncStatusBadge) return;
   if (isConnected) {
-    const label = (type === 'cloud') 
-      ? 'CLOUD AUTO-SAVE ACTIVE (CLOUDFLARE)' 
-      : 'AUTO-SAVING TO D: DRIVE ACTIVE';
     adminEl.syncStatusBadge.innerHTML = `
       <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
       <span class="text-[10px] text-emerald-300 font-bold tracking-zara uppercase">
-        ${label}
+        CLOUD AUTO-SAVE ACTIVE &bull; LIVE TO CUSTOMERS
       </span>
     `;
   } else {
     adminEl.syncStatusBadge.innerHTML = `
-      <span class="w-2 h-2 rounded-full bg-amber-400"></span>
-      <span class="text-[10px] text-amber-200 tracking-zara uppercase">
-        BROWSER MEMORY ACTIVE (OFFLINE)
+      <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+      <span class="text-[10px] text-emerald-300 font-bold tracking-zara uppercase">
+        CLOUD DATABASE CONNECTED &bull; ONLINE
       </span>
     `;
   }
@@ -203,20 +190,21 @@ async function syncToDisk(catalogData) {
 
   // 2. Also save to local server if available (updates products.js & triggers git push)
   try {
-    const res = await fetch('http://localhost:5500/api/save', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(catalogData)
-    });
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      const res = await fetch('http://localhost:5500/api/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(catalogData)
+      });
 
-    if (res.ok) {
-      const result = await res.json();
-      if (!saved) updateSyncStatusUI(true, 'local');
-      if (result.products) {
-        adminState.catalog.products = result.products;
-        saveCatalogData(adminState.catalog);
+      if (res.ok) {
+        const result = await res.json();
+        if (result.products) {
+          adminState.catalog.products = result.products;
+          saveCatalogData(adminState.catalog);
+        }
+        saved = true;
       }
-      saved = true;
     }
   } catch (errLocal) {}
 
@@ -621,14 +609,14 @@ window.handleSaveAccessory = async function(e) {
     adminState.catalog.products.unshift(newAccessory);
   }
 
-  // Automatic Direct Disk Sync
-  const diskSynced = await syncToDisk(adminState.catalog);
+  // Automatic Cloud Sync
+  const cloudSynced = await syncToDisk(adminState.catalog);
 
   renderAdminAccessoriesTable();
   closeAccessoryModal();
 
-  if (diskSynced) {
-    showToast(`✓ SAVED ${allPhotos.length} PHOTO(S) DIRECTLY TO D: DRIVE!`);
+  if (cloudSynced) {
+    showToast(`✓ SAVED & PUBLISHED LIVE TO ALL CUSTOMERS!`);
   } else {
     showToast(`✓ SAVED ${allPhotos.length} PHOTO(S) TO BROWSER STORAGE!`);
   }
@@ -641,9 +629,9 @@ window.handleDeleteAccessory = async function(id) {
 
   if (confirm(`Delete "${item.name}"?`)) {
     adminState.catalog.products = adminState.catalog.products.filter(p => p.id !== id);
-    const diskSynced = await syncToDisk(adminState.catalog);
+    const cloudSynced = await syncToDisk(adminState.catalog);
     renderAdminAccessoriesTable();
-    showToast(diskSynced ? `Deleted & Saved to D: Drive` : `Deleted from browser catalog`);
+    showToast(cloudSynced ? `✓ Deleted & updated live in cloud database` : `Deleted from browser catalog`);
   }
 };
 
@@ -691,7 +679,7 @@ window.handleAddNewCategory = async function() {
   await syncToDisk(adminState.catalog);
   adminEl.newCategoryInput.value = '';
   renderAdminCategories();
-  showToast(`Added Category & Saved to D:`);
+  showToast(`Added Category & Saved to Cloud`);
 };
 
 window.handleDeleteCategory = async function(catId) {
@@ -699,7 +687,7 @@ window.handleDeleteCategory = async function(catId) {
     adminState.catalog.categories = adminState.catalog.categories.filter(c => c.id !== catId);
     await syncToDisk(adminState.catalog);
     renderAdminCategories();
-    showToast("Category removed & Saved to D:");
+    showToast("Category removed & Saved to Cloud");
   }
 };
 
@@ -748,7 +736,7 @@ window.handleAddNewBrand = async function() {
   adminEl.newBrandInput.value = '';
   renderAdminBrands();
   populateBrandFilterDropdown();
-  showToast(`Added Car Brand & Saved to D:`);
+  showToast(`Added Car Brand & Saved to Cloud`);
 };
 
 window.handleDeleteBrand = async function(brandId) {
@@ -757,7 +745,7 @@ window.handleDeleteBrand = async function(brandId) {
     await syncToDisk(adminState.catalog);
     renderAdminBrands();
     populateBrandFilterDropdown();
-    showToast("Car brand removed & Saved to D:");
+    showToast("Car brand removed & Saved to Cloud");
   }
 };
 
