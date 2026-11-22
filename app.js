@@ -316,13 +316,13 @@ window.openDetailModal = function(productId) {
   el.detailContent.innerHTML = `
     <div class="grid grid-cols-1 md:grid-cols-2 gap-0">
       <!-- Photo Area -->
-      <div class="relative bg-neutral-100 aspect-[3/4] overflow-hidden flex flex-col justify-between group">
-        <!-- Main Large Photo -->
+      <div class="relative bg-[#f7f7f7] aspect-square md:aspect-auto min-h-[360px] overflow-hidden flex items-center justify-center p-4 group">
+        <!-- Main Large Photo (Full, uncropped view) -->
         <img 
           id="modalMainImg" 
           src="${allImages[0]}" 
           alt="${product.name}" 
-          class="w-full h-full object-cover transition-opacity duration-300"
+          class="w-full h-full max-h-[520px] object-contain transition-opacity duration-300"
         />
 
         <!-- Left / Right Navigation Arrows if multiple photos -->

@@ -15,9 +15,24 @@ import webbrowser
 import base64
 import time
 import subprocess
+import threading
 
 PORT = 5500
 DIRECTORY = os.path.dirname(os.path.abspath(__file__))
+
+def auto_deploy_to_github():
+    """Commits and pushes changes directly to GitHub, triggering instant Cloudflare Pages deploy."""
+    try:
+        git_exe = r"C:\Users\hp\AppData\Local\Programs\MinGit\cmd\git.exe"
+        if not os.path.exists(git_exe):
+            git_exe = "git"
+        subprocess.run([git_exe, "-C", DIRECTORY, "add", "-A"], capture_output=True, text=True)
+        commit_msg = f"Auto-sync from Admin: {time.strftime('%Y-%m-%d %H:%M:%S')}"
+        subprocess.run([git_exe, "-C", DIRECTORY, "commit", "-m", commit_msg], capture_output=True, text=True)
+        push_res = subprocess.run([git_exe, "-C", DIRECTORY, "push", "origin", "main"], capture_output=True, text=True)
+        print(f"[AUTO-DEPLOY SUCCESS] Pushed to GitHub & Cloudflare: {commit_msg}")
+    except Exception as err:
+        print(f"[AUTO-DEPLOY ERROR] {err}")
 
 class KokoAutoSaveHandler(http.server.SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
@@ -146,6 +161,9 @@ function saveCatalogData(data) {{
                 }
                 self.wfile.write(json.dumps(response).encode('utf-8'))
                 print(f"[AUTO-SAVE SUCCESS] Changes written to {products_file}")
+
+                # Trigger automatic background deployment to GitHub & Cloudflare
+                threading.Thread(target=auto_deploy_to_github, daemon=True).start()
 
             except Exception as e:
                 self.send_response(500)

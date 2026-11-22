@@ -198,17 +198,17 @@ async function syncToDisk(catalogData) {
 // Authentication Handlers
 window.handleAdminLogin = function(e) {
   e.preventDefault();
-  const email = adminEl.adminEmailInput.value.trim();
+  const email = adminEl.adminEmailInput.value.trim().toLowerCase();
   const pass = adminEl.adminPassInput.value.trim();
 
-  if (pass === 'koko2026' || pass === 'admin' || pass.length >= 4) {
+  if (email === 'koko@gmail.com' && pass === 'koko12345') {
     adminState.isLoggedIn = true;
     sessionStorage.setItem('koko_admin_auth', 'true');
     sessionStorage.setItem('koko_admin_email', email);
-    showToast(`WELCOME BACK, ${email.toUpperCase()}`);
+    showToast(`WELCOME BACK, ADMIN`);
     showDashboard();
   } else {
-    alert("Invalid credentials. Try password: koko2026");
+    alert("Access Denied: Incorrect email or password.");
   }
 };
 
@@ -300,11 +300,11 @@ function renderAdminAccessoriesTable() {
     return `
       <tr class="border-b border-neutral-200 hover:bg-neutral-50 transition-colors">
         <td class="p-4">
-          <div class="relative w-14 h-18 bg-neutral-200 border border-neutral-300 overflow-hidden">
+          <div class="relative w-14 h-18 bg-white border border-neutral-300 overflow-hidden flex items-center justify-center p-0.5">
             <img 
               src="${item.image}" 
               alt="${item.name}" 
-              class="w-full h-full object-cover"
+              class="w-full h-full object-contain"
               onerror="this.src='https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&w=1200&q=80'"
             />
             ${item.images && item.images.length > 1 ? `
@@ -433,8 +433,8 @@ function renderPhotosGallery() {
     const isCover = idx === 0;
     return `
       <div class="relative bg-white border ${isCover ? 'border-black ring-1 ring-black' : 'border-neutral-300'} p-1.5 flex flex-col justify-between group">
-        <div class="aspect-[3/4] overflow-hidden bg-neutral-100 relative">
-          <img src="${imgUrl}" class="w-full h-full object-cover" />
+        <div class="aspect-[3/4] overflow-hidden bg-neutral-100 relative flex items-center justify-center p-1">
+          <img src="${imgUrl}" class="w-full h-full object-contain" />
           <div class="absolute top-1 left-1">
             <span class="${isCover ? 'bg-black text-white' : 'bg-neutral-800/80 text-white'} text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5">
               ${isCover ? 'COVER' : `#${idx + 1}`}
@@ -808,23 +808,23 @@ function showToast(msg) {
 window.handlePushToGithub = async function() {
   const btn = document.getElementById('btnPushGithub');
   const txt = document.getElementById('btnPushGithubText');
-  const originalText = txt ? txt.textContent : 'رفع وتحديث الموقع الحي (GITHUB PUSH)';
+  const originalText = txt ? txt.textContent : 'DEPLOY TO GITHUB & CLOUDFLARE';
   
   if (btn) btn.disabled = true;
-  if (txt) txt.textContent = 'جاري الرفع لـ GitHub... ⏳';
+  if (txt) txt.textContent = 'DEPLOYING TO CLOUDFLARE... ⏳';
 
   try {
     const res = await fetch('/api/git-push', { method: 'POST' });
     const data = await res.json();
     if (res.ok && (data.status === 'ok' || data.status === 'warning')) {
-      alert("✅ تم الرفع بنجاح على GitHub!\nالموقع الحي (Cloudflare) هيتحدث تلقائياً خلال ثواني.\n\nرابط الموقع الحي:\nhttps://koko-accessories.pages.dev/");
-      showToast("تم تحديث الموقع الحي بنجاح!");
+      alert("SUCCESS: Deployed to GitHub & Cloudflare!\nThe live website will update automatically within seconds.\n\nLive Site:\nhttps://koko-accessories.pages.dev/");
+      showToast("DEPLOYED TO CLOUDFLARE SUCCESSFULLY!");
     } else {
-      alert("⚠️ ملحوظة: " + (data.message || data.error || 'تمت العملية'));
+      alert("Notice: " + (data.message || data.error || 'Operation completed'));
     }
   } catch (err) {
     console.error("Git push failed:", err);
-    alert("تأكد أن السيرفر المحلي شغال عبر تشغيل Open KOKO (Auto-Save).bat");
+    alert("Please make sure the local server is running via 'Open KOKO (Auto-Save).bat'");
   } finally {
     if (btn) btn.disabled = false;
     if (txt) txt.textContent = originalText;
