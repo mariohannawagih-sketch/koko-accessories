@@ -120,9 +120,33 @@ async function checkDiskSyncConnection() {
           const catRes = await fetch('/api/catalog');
           if (catRes.ok) {
             const catData = await catRes.json();
-            if (catData && Array.isArray(catData.products) && catData.products.length > 0) {
-              adminState.catalog = catData;
-              saveCatalogData(catData);
+            if (catData && Array.isArray(catData.products)) {
+              const defaultItems = (adminState.catalog && adminState.catalog.products) ? adminState.catalog.products : DEFAULT_PRODUCTS;
+              const cloudItemsMap = new Map();
+              catData.products.forEach(p => { if (p && p.id) cloudItemsMap.set(p.id, p); });
+
+              const mergedProducts = defaultItems.map(item => {
+                const cloudItem = cloudItemsMap.get(item.id);
+                if (cloudItem) {
+                  return { ...item, ...cloudItem };
+                }
+                return item;
+              });
+
+              const defaultIds = new Set(defaultItems.map(i => i.id));
+              catData.products.forEach(p => {
+                if (p && p.id && !defaultIds.has(p.id)) {
+                  mergedProducts.push(p);
+                }
+              });
+
+              adminState.catalog = {
+                brands: (catData.brands && catData.brands.length >= DEFAULT_CAR_BRANDS.length) ? catData.brands : DEFAULT_CAR_BRANDS,
+                categories: (catData.categories && catData.categories.length > 0) ? catData.categories : DEFAULT_CATEGORIES,
+                products: mergedProducts
+              };
+              saveCatalogData(adminState.catalog);
+              syncToDisk(adminState.catalog);
               renderAdminAccessoriesTable();
               renderAdminCategories();
               renderAdminBrands();

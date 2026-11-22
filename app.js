@@ -119,9 +119,34 @@ async function initApp() {
       const cloudRes = await fetch('/api/catalog');
       if (cloudRes.ok) {
         const cloudData = await cloudRes.json();
-        if (cloudData && Array.isArray(cloudData.products) && cloudData.products.length > 0) {
-          state.catalog = cloudData;
-          saveCatalogData(cloudData);
+        if (cloudData && Array.isArray(cloudData.products)) {
+          // Smart merge: Always preserve all built-in catalog items (92 products)
+          const defaultItems = (state.catalog && state.catalog.products) ? state.catalog.products : DEFAULT_PRODUCTS;
+          const cloudItemsMap = new Map();
+          cloudData.products.forEach(p => { if (p && p.id) cloudItemsMap.set(p.id, p); });
+
+          const mergedProducts = defaultItems.map(item => {
+            const cloudItem = cloudItemsMap.get(item.id);
+            if (cloudItem) {
+              return { ...item, ...cloudItem };
+            }
+            return item;
+          });
+
+          const defaultIds = new Set(defaultItems.map(i => i.id));
+          cloudData.products.forEach(p => {
+            if (p && p.id && !defaultIds.has(p.id)) {
+              mergedProducts.push(p);
+            }
+          });
+
+          state.catalog = {
+            brands: (cloudData.brands && cloudData.brands.length >= DEFAULT_CAR_BRANDS.length) ? cloudData.brands : DEFAULT_CAR_BRANDS,
+            categories: (cloudData.categories && cloudData.categories.length > 0) ? cloudData.categories : DEFAULT_CATEGORIES,
+            products: mergedProducts
+          };
+
+          saveCatalogData(state.catalog);
           renderCarBrands();
           renderCategories();
           renderAccessories();
