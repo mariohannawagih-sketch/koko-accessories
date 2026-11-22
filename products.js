@@ -564,18 +564,12 @@ function getCatalogData() {
     const saved = localStorage.getItem('koko_catalog_data');
     if (saved) {
       const parsed = JSON.parse(saved);
-      if (Array.isArray(parsed)) {
+      let prods = Array.isArray(parsed) ? parsed : (parsed && Array.isArray(parsed.products) ? parsed.products : null);
+      if (prods && prods.length >= DEFAULT_PRODUCTS.length) {
         return {
-          brands: DEFAULT_CAR_BRANDS,
-          categories: DEFAULT_CATEGORIES,
-          products: parsed
-        };
-      }
-      if (parsed && typeof parsed === 'object') {
-        return {
-          brands: (Array.isArray(parsed.brands) && parsed.brands.length > 0) ? parsed.brands : DEFAULT_CAR_BRANDS,
-          categories: (Array.isArray(parsed.categories) && parsed.categories.length > 0) ? parsed.categories : DEFAULT_CATEGORIES,
-          products: Array.isArray(parsed.products) ? parsed.products : DEFAULT_PRODUCTS
+          brands: (parsed && Array.isArray(parsed.brands) && parsed.brands.length > 0) ? parsed.brands : DEFAULT_CAR_BRANDS,
+          categories: (parsed && Array.isArray(parsed.categories) && parsed.categories.length > 0) ? parsed.categories : DEFAULT_CATEGORIES,
+          products: prods
         };
       }
     }

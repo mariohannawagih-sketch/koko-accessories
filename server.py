@@ -14,6 +14,7 @@ import sys
 import webbrowser
 import base64
 import time
+import subprocess
 
 PORT = 5500
 DIRECTORY = os.path.dirname(os.path.abspath(__file__))
@@ -105,18 +106,12 @@ function getCatalogData() {{
     const saved = localStorage.getItem('koko_catalog_data');
     if (saved) {{
       const parsed = JSON.parse(saved);
-      if (Array.isArray(parsed)) {{
+      let prods = Array.isArray(parsed) ? parsed : (parsed && Array.isArray(parsed.products) ? parsed.products : null);
+      if (prods && prods.length >= DEFAULT_PRODUCTS.length) {{
         return {{
-          brands: DEFAULT_CAR_BRANDS,
-          categories: DEFAULT_CATEGORIES,
-          products: parsed
-        }};
-      }}
-      if (parsed && typeof parsed === 'object') {{
-        return {{
-          brands: (Array.isArray(parsed.brands) && parsed.brands.length > 0) ? parsed.brands : DEFAULT_CAR_BRANDS,
-          categories: (Array.isArray(parsed.categories) && parsed.categories.length > 0) ? parsed.categories : DEFAULT_CATEGORIES,
-          products: Array.isArray(parsed.products) ? parsed.products : DEFAULT_PRODUCTS
+          brands: (parsed && Array.isArray(parsed.brands) && parsed.brands.length > 0) ? parsed.brands : DEFAULT_CAR_BRANDS,
+          categories: (parsed && Array.isArray(parsed.categories) && parsed.categories.length > 0) ? parsed.categories : DEFAULT_CATEGORIES,
+          products: prods
         }};
       }}
     }}
@@ -158,6 +153,38 @@ function saveCatalogData(data) {{
                 self.end_headers()
                 self.wfile.write(json.dumps({'status': 'error', 'error': str(e)}).encode('utf-8'))
                 print(f"[AUTO-SAVE ERROR] {e}")
+        elif self.path == '/api/git-push':
+            try:
+                git_exe = r"C:\Users\hp\AppData\Local\Programs\MinGit\cmd\git.exe"
+                if not os.path.exists(git_exe):
+                    git_exe = "git"
+
+                # Git add
+                add_res = subprocess.run([git_exe, "-C", DIRECTORY, "add", "-A"], capture_output=True, text=True)
+                # Git commit
+                commit_msg = f"Catalog update {time.strftime('%Y-%m-%d %H:%M:%S')}"
+                commit_res = subprocess.run([git_exe, "-C", DIRECTORY, "commit", "-m", commit_msg], capture_output=True, text=True)
+                # Git push
+                push_res = subprocess.run([git_exe, "-C", DIRECTORY, "push", "origin", "main"], capture_output=True, text=True)
+
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+
+                success = push_res.returncode == 0 or "Everything up-to-date" in push_res.stderr or "Everything up-to-date" in push_res.stdout
+                resp_data = {
+                    'status': 'ok' if success else 'warning',
+                    'message': 'Changes pushed to GitHub successfully! Live site will update in 1-2 minutes.' if success else 'Git push notice',
+                    'details': (push_res.stdout or "") + "\n" + (push_res.stderr or "")
+                }
+                self.wfile.write(json.dumps(resp_data).encode('utf-8'))
+                print(f"[GIT PUSH] {resp_data['message']}")
+            except Exception as e:
+                self.send_response(500)
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({'status': 'error', 'error': str(e)}).encode('utf-8'))
+                print(f"[GIT PUSH ERROR] {e}")
         else:
             self.send_response(404)
             self.end_headers()

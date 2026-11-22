@@ -801,3 +801,32 @@ function showToast(msg) {
   adminEl.toast.classList.add('show');
   setTimeout(() => adminEl.toast.classList.remove('show'), 3000);
 }
+
+// ==========================================
+// 1-CLICK GITHUB SYNC & DEPLOY
+// ==========================================
+window.handlePushToGithub = async function() {
+  const btn = document.getElementById('btnPushGithub');
+  const txt = document.getElementById('btnPushGithubText');
+  const originalText = txt ? txt.textContent : 'رفع وتحديث الموقع الحي (GITHUB PUSH)';
+  
+  if (btn) btn.disabled = true;
+  if (txt) txt.textContent = 'جاري الرفع لـ GitHub... ⏳';
+
+  try {
+    const res = await fetch('/api/git-push', { method: 'POST' });
+    const data = await res.json();
+    if (res.ok && (data.status === 'ok' || data.status === 'warning')) {
+      alert("✅ تم الرفع بنجاح على GitHub!\nالموقع الحي (Live Site) هيتحدث تلقائياً خلال دقيقة أو دقيقتين.\n\nرابط الموقع الحي:\nhttps://mariohannawagih-sketch.github.io/koko-accessories/");
+      showToast("تم تحديث GitHub والموقع الحي بنجاح!");
+    } else {
+      alert("⚠️ ملحوظة: " + (data.message || data.error || 'تمت العملية'));
+    }
+  } catch (err) {
+    console.error("Git push failed:", err);
+    alert("تأكد أن السيرفر المحلي شغال عبر تشغيل Open KOKO (Auto-Save).bat");
+  } finally {
+    if (btn) btn.disabled = false;
+    if (txt) txt.textContent = originalText;
+  }
+};
