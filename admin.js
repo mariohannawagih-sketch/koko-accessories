@@ -105,9 +105,39 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Check if Auto-save Server is active
 async function checkDiskSyncConnection() {
+  // 1. Check Cloudflare Cloud Database first (when on https://koko-accessories.pages.dev/admin)
+  try {
+    const cloudHealthRes = await fetch('/api/health');
+    if (cloudHealthRes.ok) {
+      const hData = await cloudHealthRes.json();
+      if (hData && hData.status === 'ok') {
+        adminState.isCloudSyncConnected = true;
+        updateSyncStatusUI(true, 'cloud');
+
+        // Also fetch latest catalog from Cloudflare KV if available
+        try {
+          const catRes = await fetch('/api/catalog');
+          if (catRes.ok) {
+            const catData = await catRes.json();
+            if (catData && Array.isArray(catData.products) && catData.products.length > 0) {
+              adminState.catalog = catData;
+              saveCatalogData(catData);
+              renderAdminAccessoriesTable();
+              renderAdminCategories();
+              renderAdminBrands();
+            }
+          }
+        } catch (eCat) {}
+
+        return true;
+      }
+    }
+  } catch (eCloud) {}
+
+  // 2. Check local Python server (when running locally or with server.py)
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 2000);
+    const timeoutId = setTimeout(() => controller.abort(), 1500);
     const res = await fetch('http://localhost:5500/api/health', { 
       method: 'GET',
       mode: 'cors',
@@ -117,58 +147,61 @@ async function checkDiskSyncConnection() {
     clearTimeout(timeoutId);
     if (res.ok) {
       adminState.isDiskSyncConnected = true;
-      updateSyncStatusUI(true);
+      updateSyncStatusUI(true, 'local');
       if (window.location.protocol === 'file:') {
-        // Seamlessly switch to localhost server so auto-save works without file:// restrictions
         window.location.href = 'http://localhost:5500/admin.html';
       }
       return true;
     }
   } catch (e) {
-    // Fallback attempt to HEAD /products.js
-    try {
-      const res2 = await fetch('http://localhost:5500/products.js', { method: 'HEAD', cache: 'no-cache' });
-      if (res2.ok) {
-        adminState.isDiskSyncConnected = true;
-        updateSyncStatusUI(true);
-        if (window.location.protocol === 'file:') {
-          window.location.href = 'http://localhost:5500/admin.html';
-        }
-        return true;
-      }
-    } catch (err2) {}
     adminState.isDiskSyncConnected = false;
     updateSyncStatusUI(false);
   }
   return false;
 }
 
-function updateSyncStatusUI(isConnected) {
+function updateSyncStatusUI(isConnected, type = 'local') {
   if (!adminEl.syncStatusBadge) return;
   if (isConnected) {
+    const label = (type === 'cloud') 
+      ? 'CLOUD AUTO-SAVE ACTIVE (CLOUDFLARE)' 
+      : 'AUTO-SAVING TO D: DRIVE ACTIVE';
     adminEl.syncStatusBadge.innerHTML = `
       <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
       <span class="text-[10px] text-emerald-300 font-bold tracking-zara uppercase">
-        AUTO-SAVING TO D: DRIVE ACTIVE
+        ${label}
       </span>
     `;
   } else {
     adminEl.syncStatusBadge.innerHTML = `
-      <a href="http://localhost:5500/admin.html" class="inline-flex items-center gap-2 cursor-pointer no-underline">
-        <span class="w-2 h-2 rounded-full bg-amber-400"></span>
-        <span class="text-[10px] text-amber-200 tracking-zara uppercase hover:underline">
-          CLICK TO CONNECT AUTO-SAVE (HTTP://LOCALHOST:5500/ADMIN.HTML)
-        </span>
-      </a>
+      <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+      <span class="text-[10px] text-amber-200 tracking-zara uppercase">
+        BROWSER MEMORY ACTIVE (OFFLINE)
+      </span>
     `;
   }
 }
 
-// Direct Disk Synchronizer
+// Synchronizer: Saves to Cloudflare Cloud Database & Local Server
 async function syncToDisk(catalogData) {
   // Always update browser localStorage first
   saveCatalogData(catalogData);
+  let saved = false;
 
+  // 1. Save directly to Cloudflare Cloud Database (KV)
+  try {
+    const cloudRes = await fetch('/api/catalog', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(catalogData)
+    });
+    if (cloudRes.ok) {
+      updateSyncStatusUI(true, 'cloud');
+      saved = true;
+    }
+  } catch (errCloud) {}
+
+  // 2. Also save to local server if available (updates products.js & triggers git push)
   try {
     const res = await fetch('http://localhost:5500/api/save', {
       method: 'POST',
@@ -178,21 +211,16 @@ async function syncToDisk(catalogData) {
 
     if (res.ok) {
       const result = await res.json();
-      adminState.isDiskSyncConnected = true;
-      updateSyncStatusUI(true);
-
-      // If server saved base64 images as local files, update state
+      if (!saved) updateSyncStatusUI(true, 'local');
       if (result.products) {
         adminState.catalog.products = result.products;
         saveCatalogData(adminState.catalog);
       }
-      return true;
+      saved = true;
     }
-  } catch (err) {
-    adminState.isDiskSyncConnected = false;
-    updateSyncStatusUI(false);
-  }
-  return false;
+  } catch (errLocal) {}
+
+  return saved;
 }
 
 // Authentication Handlers

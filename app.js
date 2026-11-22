@@ -65,7 +65,7 @@ function initElements() {
 }
 
 // Init Application
-function initApp() {
+async function initApp() {
   try {
     initElements();
     state.catalog = getSafeCatalog();
@@ -74,6 +74,21 @@ function initApp() {
     renderCategories();
     renderAccessories();
     setupSearch();
+
+    // Check Cloudflare Cloud Database for real-time catalog updates
+    try {
+      const cloudRes = await fetch('/api/catalog');
+      if (cloudRes.ok) {
+        const cloudData = await cloudRes.json();
+        if (cloudData && Array.isArray(cloudData.products) && cloudData.products.length > 0) {
+          state.catalog = cloudData;
+          saveCatalogData(cloudData);
+          renderCarBrands();
+          renderCategories();
+          renderAccessories();
+        }
+      }
+    } catch (eCloud) {}
   } catch (err) {
     console.error("Initialization error:", err);
   }
