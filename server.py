@@ -56,6 +56,20 @@ class KokoAutoSaveHandler(http.server.SimpleHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(b'{"status":"ok","autoSave":true}')
             return
+        if self.path == '/api/sales':
+            sales_file = os.path.join(DIRECTORY, 'sales_data.json')
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.end_headers()
+            if os.path.exists(sales_file):
+                try:
+                    with open(sales_file, 'r', encoding='utf-8') as f:
+                        self.wfile.write(f.read().encode('utf-8'))
+                        return
+                except Exception:
+                    pass
+            self.wfile.write(b'{"sales":[],"status":"empty"}')
+            return
         super().do_GET()
 
     def do_POST(self):
@@ -171,6 +185,35 @@ function saveCatalogData(data) {{
                 self.end_headers()
                 self.wfile.write(json.dumps({'status': 'error', 'error': str(e)}).encode('utf-8'))
                 print(f"[AUTO-SAVE ERROR] {e}")
+        elif self.path == '/api/sales':
+            content_length = int(self.headers.get('Content-Length', 0))
+            body = self.rfile.read(content_length)
+            try:
+                parsed = json.loads(body.decode('utf-8'))
+                if not isinstance(parsed, dict) or not isinstance(parsed.get('sales'), list):
+                    self.send_response(400)
+                    self.send_header('Content-Type', 'application/json')
+                    self.end_headers()
+                    self.wfile.write(json.dumps({'status': 'error', 'message': 'Invalid sales payload'}).encode('utf-8'))
+                    return
+
+                sales_file = os.path.join(DIRECTORY, 'sales_data.json')
+                payload = {
+                    'sales': parsed['sales'],
+                    'updatedAt': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())
+                }
+                with open(sales_file, 'w', encoding='utf-8') as f:
+                    json.dump(payload, f, indent=2)
+
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({'status': 'ok', 'count': len(parsed['sales'])}).encode('utf-8'))
+            except Exception as e:
+                self.send_response(500)
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({'status': 'error', 'error': str(e)}).encode('utf-8'))
         elif self.path == '/api/git-push':
             try:
                 git_exe = r"C:\Users\hp\AppData\Local\Programs\MinGit\cmd\git.exe"

@@ -110,7 +110,7 @@
               <span>STORE</span>
               <span class="desktop-store-text">FRONT</span>
             </a>
-            <button type="button" onclick="openAddAccessoryModal()" class="header-btn btn-primary-pill desktop-add-btn">
+            <button id="desktopPrimaryActionBtn" type="button" onclick="openAddAccessoryModal()" class="header-btn btn-primary-pill desktop-add-btn">
               + ADD ACCESSORY
             </button>
             <button type="button" onclick="handleAdminLogout()" class="header-btn" title="Sign Out">
@@ -123,6 +123,9 @@
         <div class="tabs-row">
           <button id="tabBtnAccessories" type="button" onclick="switchAdminTab('accessories')" class="tab-btn active">
             ACCESSORIES (<span id="tabProdCount">0</span>)
+          </button>
+          <button id="tabBtnSales" type="button" onclick="switchAdminTab('sales')" class="tab-btn">
+            📊 SALES &amp; PROFIT (<span id="tabSalesCount">0</span>)
           </button>
           <button id="tabBtnCategories" type="button" onclick="switchAdminTab('categories')" class="tab-btn">
             CATEGORIES (<span id="tabCatCount">0</span>)
@@ -230,10 +233,122 @@
         </div>
       </div>
 
+      <!-- TAB 5: SALES & PROFIT ANALYTICS -->
+      <div id="tabContentSales" class="hidden">
+        <!-- Period Filters & CSV Export -->
+        <div class="sales-period-bar">
+          <div class="period-pills">
+            <button type="button" class="period-pill" onclick="setSalesPeriod('today', this)">TODAY</button>
+            <button type="button" class="period-pill active" onclick="setSalesPeriod('7d', this)">LAST 7 DAYS</button>
+            <button type="button" class="period-pill" onclick="setSalesPeriod('month', this)">THIS MONTH</button>
+            <button type="button" class="period-pill" onclick="setSalesPeriod('all', this)">ALL TIME</button>
+          </div>
+          <div class="sales-toolbar-actions">
+            <button type="button" onclick="exportSalesCSV()" class="btn-outline" style="padding:8px 14px;font-size:10.5px;">
+              EXPORT EXCEL / CSV
+            </button>
+          </div>
+        </div>
+
+        <!-- 4 KPI Summary Cards -->
+        <section class="kpi-grid">
+          <div class="kpi-card">
+            <span class="kpi-label">Total Sales (Revenue)</span>
+            <span id="kpiRevenue" class="kpi-val">0 EGP</span>
+            <span class="kpi-sub">Total collected from buyers</span>
+          </div>
+
+          <div class="kpi-card">
+            <span class="kpi-label">Total Cost (Bought For)</span>
+            <span id="kpiCost" class="kpi-val">0 EGP</span>
+            <span class="kpi-sub">Wholesale / stock cost</span>
+          </div>
+
+          <div class="kpi-card kpi-profit">
+            <span class="kpi-label">Net Profit Earned</span>
+            <span id="kpiProfit" class="kpi-val">+0 EGP</span>
+            <span class="kpi-sub">Margin: <span id="kpiMargin" class="kpi-badge">0%</span></span>
+          </div>
+
+          <div class="kpi-card">
+            <span class="kpi-label">Orders &amp; Units Sold</span>
+            <span id="kpiOrders" class="kpi-val">0 (0 pcs)</span>
+            <span id="kpiAvgProfit" class="kpi-sub">Avg +0 EGP / order</span>
+          </div>
+        </section>
+
+        <!-- Visual Analytics Grid -->
+        <section class="analytics-grid">
+          <div class="panel-card">
+            <div class="panel-header">
+              <span class="panel-title font-racing">Daily Revenue vs Net Profit (Last 7 Days)</span>
+              <div class="chart-legend">
+                <span><span class="legend-dot" style="background:var(--revenue-blue);"></span>Sales</span>
+                <span><span class="legend-dot" style="background:var(--profit-green);"></span>Profit</span>
+              </div>
+            </div>
+            <div id="dailyBarChart" class="bar-chart"></div>
+          </div>
+
+          <div class="split-subgrid">
+            <div class="panel-card">
+              <div class="panel-header" style="margin-bottom:10px;">
+                <span class="panel-title font-racing">Profit By Car Brand</span>
+                <span class="panel-sub">TOP MAKES</span>
+              </div>
+              <div id="brandProfitList" class="brand-bar-list"></div>
+            </div>
+
+            <div class="panel-card">
+              <div class="panel-header" style="margin-bottom:10px;">
+                <span class="panel-title font-racing">Most Profitable Items</span>
+              </div>
+              <div id="topItemsList" class="top-items-list"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Daily Sales & Cost Log -->
+        <section class="sales-log-wrap">
+          <div class="sales-log-head">
+            <div>
+              <h2 class="font-racing" style="font-size:15px;text-transform:uppercase;">Daily Sales &amp; Cost Log</h2>
+              <span style="font-size:11px;color:var(--text-muted);">Tap + Log Sale anytime to record bought &amp; sold prices</span>
+            </div>
+            <div class="sales-search-box">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text-muted)"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+              <input id="salesSearchInput" type="text" placeholder="Search item, brand, payment..." oninput="renderSalesDashboard()" />
+            </div>
+          </div>
+
+          <!-- PC Sales Table -->
+          <div class="sales-pc-table-wrap">
+            <table class="sales-table">
+              <thead>
+                <tr>
+                  <th>DATE</th>
+                  <th>ACCESSORY &amp; BRAND</th>
+                  <th>QTY</th>
+                  <th>BOUGHT FOR</th>
+                  <th>SOLD FOR</th>
+                  <th>NET PROFIT</th>
+                  <th>PAYMENT</th>
+                  <th style="text-align:right;">ACTION</th>
+                </tr>
+              </thead>
+              <tbody id="salesTableBody"></tbody>
+            </table>
+          </div>
+
+          <!-- Mobile Sales Cards -->
+          <div id="salesMobileList" class="sales-mobile-list"></div>
+        </section>
+      </div>
+
     </main>
 
-    <!-- Sticky Bottom Mobile Add Button -->
-    <button type="button" onclick="openAddAccessoryModal()" class="mobile-add-fab">
+    <!-- Sticky Bottom Mobile Primary CTA -->
+    <button id="mobilePrimaryFab" type="button" onclick="openAddAccessoryModal()" class="mobile-add-fab">
       + ADD NEW ACCESSORY
     </button>
   </div>
@@ -343,6 +458,94 @@
             CANCEL
           </button>
         </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       4. LOG / EDIT DAILY SALE MODAL / BOTTOM SHEET
+       ========================================== -->
+  <div id="saleModal" class="modal-overlay" onclick="if(event.target === this) closeSaleModal()">
+    <div class="modal-box narrow" onclick="event.stopPropagation()">
+      <div class="sheet-handle"></div>
+      <div class="modal-header">
+        <div>
+          <span style="display:block;font-size:9.5px;font-weight:700;letter-spacing:0.12em;color:var(--text-muted);text-transform:uppercase;">DAILY LEDGER</span>
+          <h3 id="saleModalTitle" class="modal-title font-racing">LOG TODAY'S SALE</h3>
+        </div>
+        <button type="button" onclick="closeSaleModal()" class="modal-close">&times;</button>
+      </div>
+
+      <form id="saleForm" onsubmit="handleSaveSale(event)" class="modal-body" style="display:flex;flex-direction:column;gap:13px;">
+        <input type="hidden" id="saleEditId" value="">
+
+        <div class="form-2col keep-2col">
+          <div>
+            <label class="form-label" for="saleDate">Sale Date</label>
+            <input id="saleDate" type="date" required class="form-field" />
+          </div>
+          <div>
+            <label class="form-label" for="salePayment">Payment Method</label>
+            <select id="salePayment" class="form-field">
+              <option value="Cash">Cash</option>
+              <option value="Instapay">Instapay</option>
+              <option value="Vodafone Cash">Vodafone Cash</option>
+              <option value="Shipping">Shipping (COD)</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="form-label" for="saleItemName">Accessory Name (Pick or Type Any Item)</label>
+          <input id="saleItemName" list="catalogItemsDatalist" required class="form-field" placeholder="Start typing Audi, Cupra, Key Cover..." oninput="handleSaleItemInput()" />
+          <datalist id="catalogItemsDatalist"></datalist>
+        </div>
+
+        <div class="form-2col keep-2col">
+          <div>
+            <label class="form-label" for="saleBrand">Car Brand</label>
+            <select id="saleBrand" class="form-field"></select>
+          </div>
+          <div>
+            <label class="form-label">Quantity</label>
+            <div class="qty-stepper">
+              <button type="button" onclick="adjustSaleQty(-1)">&minus;</button>
+              <input id="saleQty" type="number" min="1" value="1" required oninput="updateLiveProfitPreview()" />
+              <button type="button" onclick="adjustSaleQty(1)">+</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-2col keep-2col">
+          <div>
+            <label class="form-label" for="saleBuyPrice">Bought For (1 pc EGP)</label>
+            <input id="saleBuyPrice" type="number" min="0" step="any" required class="form-field" placeholder="e.g. 280" oninput="updateLiveProfitPreview()" />
+          </div>
+          <div>
+            <label class="form-label" for="saleSellPrice">Sold For (1 pc EGP)</label>
+            <input id="saleSellPrice" type="number" min="0" step="any" required class="form-field" placeholder="e.g. 550" oninput="updateLiveProfitPreview()" />
+          </div>
+        </div>
+
+        <div id="profitPreviewBox" class="profit-preview-box">
+          <div>
+            <span style="display:block;font-size:10px;font-weight:700;text-transform:uppercase;color:var(--text-muted);">Calculated Net Profit</span>
+            <strong id="previewProfitVal" class="profit-preview-val">+0 EGP</strong>
+          </div>
+          <div class="profit-preview-meta">
+            <div id="previewMeta">Rev: 0 EGP &bull; Cost: 0 EGP</div>
+            <strong id="previewMargin" style="color:var(--profit-green);">0% Margin</strong>
+          </div>
+        </div>
+
+        <div>
+          <label class="form-label" for="saleNote">Note / Customer (Optional)</label>
+          <input id="saleNote" type="text" class="form-field" placeholder="e.g. Nasr City delivery, regular customer..." />
+        </div>
+
+        <button id="saleSubmitBtn" type="submit" class="btn-black" style="width:100%;height:44px;">
+          SAVE SALE TO DASHBOARD
+        </button>
       </form>
     </div>
   </div>

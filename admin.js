@@ -40,6 +40,23 @@ function getBrandDisplayName(brandObj, fallbackId) {
   return brandObj.name || brandObj.id.toUpperCase();
 }
 
+function escapeHtml(str) {
+  return String(str == null ? '' : str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function getTodayISO() {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, '0');
+  const d = String(now.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
 let adminState = {
   isLoggedIn: false,
   currentTab: 'accessories',
@@ -49,7 +66,11 @@ let adminState = {
   editingAccessoryId: null,
   isDiskSyncConnected: false,
   isCloudSyncConnected: false,
-  hasMergedCloudOnce: false
+  hasMergedCloudOnce: false,
+  sales: [],
+  salesPeriod: '7d',
+  editingSaleId: null,
+  hasLoadedCloudSalesOnce: false
 };
 
 const adminEl = {
@@ -60,10 +81,12 @@ const adminEl = {
   syncStatusBadge: document.getElementById('syncStatusBadge'),
 
   tabBtnAccessories: document.getElementById('tabBtnAccessories'),
+  tabBtnSales: document.getElementById('tabBtnSales'),
   tabBtnCategories: document.getElementById('tabBtnCategories'),
   tabBtnBrands: document.getElementById('tabBtnBrands'),
   tabBtnExport: document.getElementById('tabBtnExport'),
   tabContentAccessories: document.getElementById('tabContentAccessories'),
+  tabContentSales: document.getElementById('tabContentSales'),
   tabContentCategories: document.getElementById('tabContentCategories'),
   tabContentBrands: document.getElementById('tabContentBrands'),
   tabContentExport: document.getElementById('tabContentExport'),
@@ -185,9 +208,14 @@ async function checkDiskSyncConnection() {
                 renderAdminAccessoriesTable();
                 renderAdminCategories();
                 renderAdminBrands();
+                populateSalesFormOptions();
               }
             }
           } catch (eCat) {}
+        }
+        if (!adminState.hasLoadedCloudSalesOnce) {
+          adminState.hasLoadedCloudSalesOnce = true;
+          loadSalesFromCloud();
         }
         return true;
       }
@@ -287,16 +315,22 @@ function showDashboard() {
   adminEl.adminDashboard.classList.remove('hidden');
 
   adminState.catalog = getSafeCatalog();
+  loadLocalSales();
   populateBrandFilterDropdown();
+  populateSalesFormOptions();
   renderAdminAccessoriesTable();
   renderAdminCategories();
   renderAdminBrands();
+  updateSalesCounter();
+  if (adminState.currentTab === 'sales') {
+    renderSalesDashboard();
+  }
   checkDiskSyncConnection();
 }
 
 window.switchAdminTab = function(tabName) {
   adminState.currentTab = tabName;
-  const tabs = ['accessories', 'categories', 'brands', 'export'];
+  const tabs = ['accessories', 'sales', 'categories', 'brands', 'export'];
   tabs.forEach(t => {
     const cap = t.charAt(0).toUpperCase() + t.slice(1);
     const btn = document.getElementById(`tabBtn${cap}`);
@@ -304,6 +338,30 @@ window.switchAdminTab = function(tabName) {
     if (btn) btn.classList.toggle('active', t === tabName);
     if (content) content.classList.toggle('hidden', t !== tabName);
   });
+
+  const deskBtn = document.getElementById('desktopPrimaryActionBtn');
+  const mobFab = document.getElementById('mobilePrimaryFab');
+  if (tabName === 'sales') {
+    if (deskBtn) {
+      deskBtn.textContent = '+ LOG SALE';
+      deskBtn.onclick = () => openSaleModal(null);
+    }
+    if (mobFab) {
+      mobFab.textContent = "+ LOG TODAY'S SALE";
+      mobFab.onclick = () => openSaleModal(null);
+    }
+    populateSalesFormOptions();
+    renderSalesDashboard();
+  } else {
+    if (deskBtn) {
+      deskBtn.textContent = '+ ADD ACCESSORY';
+      deskBtn.onclick = () => openAddAccessoryModal();
+    }
+    if (mobFab) {
+      mobFab.textContent = '+ ADD NEW ACCESSORY';
+      mobFab.onclick = () => openAddAccessoryModal();
+    }
+  }
 
   if (tabName === 'accessories') renderAdminAccessoriesTable();
   if (tabName === 'categories') renderAdminCategories();
@@ -799,6 +857,7 @@ window.handleAddNewBrand = async function() {
   adminEl.newBrandInput.value = '';
   renderAdminBrands();
   populateBrandFilterDropdown();
+  populateSalesFormOptions();
   updateAdminCounters();
   showToast("Added Car Brand & Saved to Cloud");
 };
@@ -809,6 +868,7 @@ window.handleDeleteBrand = async function(brandId) {
     await syncToDisk(adminState.catalog);
     renderAdminBrands();
     populateBrandFilterDropdown();
+    populateSalesFormOptions();
     updateAdminCounters();
     showToast("Car brand removed & Saved to Cloud");
   }
@@ -882,3 +942,561 @@ function showToast(msg) {
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => adminEl.toast.classList.remove('show'), 2800);
 }
+
+// ============================================================
+// SALES & PROFIT ANALYTICS ENGINE (WITH CLOUD KV SYNC)
+// ============================================================
+const SALES_STORAGE_KEY = 'koko_sales_ledger_v1';
+const SALES_DIRTY_KEY = 'koko_sales_dirty';
+
+function fmtEGP(num) {
+  return Math.round(Number(num) || 0).toLocaleString('en-US') + ' EGP';
+}
+
+function fmtSignedEGP(num) {
+  const n = Math.round(Number(num) || 0);
+  if (n < 0) return '-' + Math.abs(n).toLocaleString('en-US') + ' EGP';
+  return '+' + n.toLocaleString('en-US') + ' EGP';
+}
+
+function getSalesBrandName(brandId) {
+  if (!brandId || brandId === 'other') return 'OTHER / UNIVERSAL';
+  const brands = (adminState.catalog && adminState.catalog.brands) || [];
+  const found = brands.find(b => b.id === brandId);
+  return getBrandDisplayName(found, brandId);
+}
+
+function updateSalesCounter() {
+  const badge = document.getElementById('tabSalesCount');
+  if (badge) badge.textContent = String((adminState.sales || []).length);
+}
+
+function saveLocalSales(dirtyFlag) {
+  try {
+    localStorage.setItem(SALES_STORAGE_KEY, JSON.stringify(adminState.sales || []));
+    if (dirtyFlag !== undefined) {
+      localStorage.setItem(SALES_DIRTY_KEY, dirtyFlag ? '1' : '0');
+    }
+  } catch (e) {
+    console.error('Error saving local sales:', e);
+  }
+}
+
+function loadLocalSales() {
+  try {
+    const raw = localStorage.getItem(SALES_STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        adminState.sales = parsed;
+        updateSalesCounter();
+        return;
+      }
+    }
+  } catch (e) {
+    console.error('Error reading local sales:', e);
+  }
+  adminState.sales = [];
+  updateSalesCounter();
+}
+
+async function syncSalesToCloud() {
+  saveLocalSales(true);
+  const payload = JSON.stringify({ sales: adminState.sales || [] });
+  let synced = false;
+
+  try {
+    const res = await fetch('/api/sales', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: payload
+    });
+    if (res.ok) {
+      synced = true;
+      updateSyncStatusUI(true);
+    }
+  } catch (eCloud) {}
+
+  if (!synced && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+    try {
+      const localRes = await fetch('http://localhost:5500/api/sales', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: payload
+      });
+      if (localRes.ok) synced = true;
+    } catch (eLocal) {}
+  }
+
+  if (synced) {
+    saveLocalSales(false);
+  }
+  return synced;
+}
+
+async function loadSalesFromCloud() {
+  try {
+    const res = await fetch('/api/sales', { cache: 'no-store' });
+    if (!res.ok) return;
+    const data = await res.json();
+    if (!data || !Array.isArray(data.sales)) return;
+
+    const isDirty = localStorage.getItem(SALES_DIRTY_KEY) === '1';
+    const localList = Array.isArray(adminState.sales) ? adminState.sales : [];
+
+    if (isDirty) {
+      const mergedMap = new Map();
+      data.sales.forEach(s => { if (s && s.id) mergedMap.set(s.id, s); });
+      localList.forEach(s => { if (s && s.id) mergedMap.set(s.id, s); });
+      adminState.sales = Array.from(mergedMap.values());
+      saveLocalSales(true);
+      await syncSalesToCloud();
+    } else if (data.sales.length === 0 && localList.length > 0 && data.status === 'empty') {
+      // Initial migration if KV has not yet received local entries
+      await syncSalesToCloud();
+    } else {
+      adminState.sales = data.sales;
+      saveLocalSales(false);
+    }
+
+    updateSalesCounter();
+    if (adminState.currentTab === 'sales') {
+      renderSalesDashboard();
+    }
+  } catch (e) {
+    console.warn('Cloud sales sync skipped:', e);
+  }
+}
+
+function populateSalesFormOptions() {
+  const brandSel = document.getElementById('saleBrand');
+  const dl = document.getElementById('catalogItemsDatalist');
+  const brands = ((adminState.catalog && adminState.catalog.brands) || []).filter(b => b.id !== 'all');
+  const products = (adminState.catalog && adminState.catalog.products) || [];
+
+  if (brandSel) {
+    const prev = brandSel.value;
+    brandSel.innerHTML = brands.map(b => {
+      return `<option value="${escapeHtml(b.id)}">${escapeHtml(getBrandDisplayName(b, b.id))}</option>`;
+    }).join('') + `<option value="other">OTHER / UNIVERSAL</option>`;
+    if (prev && Array.from(brandSel.options).some(o => o.value === prev)) {
+      brandSel.value = prev;
+    }
+  }
+
+  if (dl) {
+    dl.innerHTML = products.map(p => `<option value="${escapeHtml(p.name)}">`).join('');
+  }
+}
+
+function isDateInPeriod(dateStr, period) {
+  if (!dateStr) return false;
+  if (period === 'all') return true;
+  const today = getTodayISO();
+  if (period === 'today') return dateStr === today;
+  if (period === 'month') return dateStr.slice(0, 7) === today.slice(0, 7);
+  if (period === '7d') {
+    const d = new Date(dateStr + 'T00:00:00');
+    const ref = new Date(today + 'T00:00:00');
+    const diffDays = (ref - d) / (1000 * 60 * 60 * 24);
+    return diffDays >= 0 && diffDays <= 6;
+  }
+  return true;
+}
+
+function getFilteredPeriodSales() {
+  const qEl = document.getElementById('salesSearchInput');
+  const q = ((qEl && qEl.value) || '').trim().toLowerCase();
+  return (adminState.sales || [])
+    .filter(s => isDateInPeriod(s.date, adminState.salesPeriod))
+    .filter(s => {
+      if (!q) return true;
+      const hay = `${s.itemName || ''} ${getSalesBrandName(s.brand)} ${s.payment || ''} ${s.note || ''}`.toLowerCase();
+      return hay.includes(q);
+    })
+    .sort((a, b) => (b.date || '').localeCompare(a.date || '') || String(b.id || '').localeCompare(String(a.id || '')));
+}
+
+window.setSalesPeriod = function(period, btn) {
+  adminState.salesPeriod = period;
+  document.querySelectorAll('.period-pill').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderSalesDashboard();
+};
+
+function renderSalesKPIs(items) {
+  let rev = 0, cost = 0, units = 0;
+  items.forEach(s => {
+    const q = Math.max(1, Number(s.qty) || 1);
+    rev += (Number(s.sellPrice) || 0) * q;
+    cost += (Number(s.buyPrice) || 0) * q;
+    units += q;
+  });
+  const profit = rev - cost;
+  const margin = rev > 0 ? Math.round((profit / rev) * 100) : 0;
+  const avgProf = items.length > 0 ? Math.round(profit / items.length) : 0;
+
+  const setText = (id, txt) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = txt;
+  };
+  setText('kpiRevenue', fmtEGP(rev));
+  setText('kpiCost', fmtEGP(cost));
+  setText('kpiProfit', fmtSignedEGP(profit));
+  const profEl = document.getElementById('kpiProfit');
+  if (profEl) profEl.style.color = profit < 0 ? 'var(--soldout-red)' : 'var(--profit-green)';
+  setText('kpiMargin', `${margin}%`);
+  setText('kpiOrders', `${items.length} (${units} pcs)`);
+  setText('kpiAvgProfit', `Avg ${fmtSignedEGP(avgProf)} / order`);
+}
+
+function renderSales7DayChart() {
+  const chart = document.getElementById('dailyBarChart');
+  if (!chart) return;
+
+  const ref = new Date(getTodayISO() + 'T00:00:00');
+  const days = [];
+  for (let i = 6; i >= 0; i--) {
+    const dt = new Date(ref);
+    dt.setDate(ref.getDate() - i);
+    const y = dt.getFullYear();
+    const m = String(dt.getMonth() + 1).padStart(2, '0');
+    const d = String(dt.getDate()).padStart(2, '0');
+    const iso = `${y}-${m}-${d}`;
+
+    const daySales = (adminState.sales || []).filter(s => s.date === iso);
+    let rev = 0, prof = 0;
+    daySales.forEach(s => {
+      const q = Math.max(1, Number(s.qty) || 1);
+      rev += (Number(s.sellPrice) || 0) * q;
+      prof += ((Number(s.sellPrice) || 0) - (Number(s.buyPrice) || 0)) * q;
+    });
+
+    const label = i === 0 ? 'NOW' : dt.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase();
+    days.push({ iso, label, rev, prof });
+  }
+
+  const maxVal = Math.max(100, ...days.map(d => Math.max(0, d.rev, d.prof)));
+  chart.innerHTML = days.map(d => {
+    const hRev = d.rev > 0 ? Math.max(4, Math.round((d.rev / maxVal) * 100)) : 3;
+    const hProf = d.prof > 0 ? Math.max(4, Math.round((d.prof / maxVal) * 100)) : 3;
+    const topAmt = d.prof > 0 ? ('+' + Math.round(d.prof)) : (d.prof < 0 ? String(Math.round(d.prof)) : '0');
+    return `
+      <div class="day-col" title="${escapeHtml(d.iso)}: Sales ${escapeHtml(fmtEGP(d.rev))} | Profit ${escapeHtml(fmtSignedEGP(d.prof))}">
+        <span class="day-amt">${escapeHtml(topAmt)}</span>
+        <div class="bars-pair">
+          <div class="bar-rev" style="height:${hRev}%;"></div>
+          <div class="bar-prof" style="height:${hProf}%;"></div>
+        </div>
+        <span class="day-label">${escapeHtml(d.label)}</span>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderSalesBrandBreakdown(items) {
+  const listEl = document.getElementById('brandProfitList');
+  if (!listEl) return;
+
+  const byBrand = {};
+  let totalPositive = 0;
+  items.forEach(s => {
+    const q = Math.max(1, Number(s.qty) || 1);
+    const prof = ((Number(s.sellPrice) || 0) - (Number(s.buyPrice) || 0)) * q;
+    const bName = getSalesBrandName(s.brand);
+    byBrand[bName] = (byBrand[bName] || 0) + prof;
+    if (prof > 0) totalPositive += prof;
+  });
+
+  const sorted = Object.entries(byBrand).sort((a, b) => b[1] - a[1]).slice(0, 4);
+  const maxP = sorted.length ? Math.max(1, sorted[0][1]) : 1;
+
+  listEl.innerHTML = sorted.map(([name, prof]) => {
+    const pct = prof > 0 ? Math.max(6, Math.round((prof / maxP) * 100)) : 4;
+    const share = totalPositive > 0 ? Math.max(0, Math.round((prof / totalPositive) * 100)) : 0;
+    return `
+      <div class="brand-bar-item">
+        <div class="brand-bar-top">
+          <span>${escapeHtml(name)} <span style="color:var(--text-muted);font-weight:500;">(${share}%)</span></span>
+          <span style="color:${prof >= 0 ? 'var(--profit-green)' : 'var(--soldout-red)'};">${escapeHtml(fmtSignedEGP(prof))}</span>
+        </div>
+        <div class="brand-bar-track"><div class="brand-bar-fill" style="width:${pct}%;"></div></div>
+      </div>
+    `;
+  }).join('') || '<div style="font-size:12px;color:var(--text-muted);">No sales recorded in this period.</div>';
+}
+
+function renderSalesTopItems(items) {
+  const listEl = document.getElementById('topItemsList');
+  if (!listEl) return;
+
+  const byItem = {};
+  items.forEach(s => {
+    const q = Math.max(1, Number(s.qty) || 1);
+    const prof = ((Number(s.sellPrice) || 0) - (Number(s.buyPrice) || 0)) * q;
+    const key = s.itemName || 'Custom Item';
+    if (!byItem[key]) byItem[key] = { qty: 0, prof: 0 };
+    byItem[key].qty += q;
+    byItem[key].prof += prof;
+  });
+
+  const sorted = Object.entries(byItem).sort((a, b) => b[1].prof - a[1].prof).slice(0, 3);
+  listEl.innerHTML = sorted.map(([name, info], idx) => `
+    <div class="top-item-row">
+      <span class="top-item-name">#${idx + 1} ${escapeHtml(name)} <span style="color:var(--text-muted);">(${info.qty} pcs)</span></span>
+      <span class="top-item-profit" style="color:${info.prof >= 0 ? 'var(--profit-green)' : 'var(--soldout-red)'};">${escapeHtml(fmtSignedEGP(info.prof))}</span>
+    </div>
+  `).join('') || '<div style="font-size:12px;color:var(--text-muted);">No items recorded in this period.</div>';
+}
+
+function renderSalesLog(items) {
+  const pcBody = document.getElementById('salesTableBody');
+  const mobList = document.getElementById('salesMobileList');
+
+  if (pcBody) {
+    pcBody.innerHTML = items.map(s => {
+      const q = Math.max(1, Number(s.qty) || 1);
+      const buyTot = (Number(s.buyPrice) || 0) * q;
+      const sellTot = (Number(s.sellPrice) || 0) * q;
+      const prof = sellTot - buyTot;
+      const brandLabel = getSalesBrandName(s.brand);
+      const sid = escapeHtml(s.id);
+
+      return `
+        <tr>
+          <td style="white-space:nowrap;color:var(--text-sub);">${escapeHtml(s.date)}</td>
+          <td>
+            <div style="font-weight:600;max-width:260px;">${escapeHtml(s.itemName)}</div>
+            <span class="brand-pill-tag" style="margin-top:3px;display:inline-block;">${escapeHtml(brandLabel)}</span>
+            ${s.note ? `<span style="font-size:10.5px;color:var(--text-muted);margin-left:6px;">${escapeHtml(s.note)}</span>` : ''}
+          </td>
+          <td style="font-weight:700;">${q}</td>
+          <td style="color:var(--text-sub);">${escapeHtml(fmtEGP(buyTot))}</td>
+          <td style="font-weight:600;">${escapeHtml(fmtEGP(sellTot))}</td>
+          <td class="profit-cell" style="color:${prof >= 0 ? 'var(--profit-green)' : 'var(--soldout-red)'};">${escapeHtml(fmtSignedEGP(prof))}</td>
+          <td><span class="pay-pill">${escapeHtml(s.payment || 'Cash')}</span></td>
+          <td style="text-align:right;white-space:nowrap;">
+            <button type="button" class="row-action-btn" onclick="openSaleModal('${sid}')">EDIT</button>
+            <button type="button" class="row-action-btn danger" style="margin-left:4px;" onclick="deleteSale('${sid}')">DEL</button>
+          </td>
+        </tr>
+      `;
+    }).join('') || '<tr><td colspan="8" style="text-align:center;padding:28px;color:var(--text-muted);">No sales in this range yet. Click "+ LOG SALE" to record your first sale.</td></tr>';
+  }
+
+  if (mobList) {
+    mobList.innerHTML = items.map(s => {
+      const q = Math.max(1, Number(s.qty) || 1);
+      const buyTot = (Number(s.buyPrice) || 0) * q;
+      const sellTot = (Number(s.sellPrice) || 0) * q;
+      const prof = sellTot - buyTot;
+      const brandLabel = getSalesBrandName(s.brand);
+      const sid = escapeHtml(s.id);
+
+      return `
+        <div class="sale-card">
+          <div class="sale-card-top">
+            <div style="display:flex;align-items:center;gap:6px;">
+              <span class="brand-pill-tag">${escapeHtml(brandLabel)}</span>
+              <span style="font-size:10.5px;color:var(--text-muted);font-weight:600;">${escapeHtml(s.date)}</span>
+            </div>
+            <span class="pay-pill">${escapeHtml(s.payment || 'Cash')}</span>
+          </div>
+          <div class="sale-card-title">${escapeHtml(s.itemName)} ${q > 1 ? `<span style="color:var(--de-gold);">(&times;${q})</span>` : ''}</div>
+          <div class="sale-card-metrics">
+            <div class="metric-box">
+              <span>Bought For</span>
+              <strong>${escapeHtml(fmtEGP(buyTot))}</strong>
+            </div>
+            <div class="metric-box">
+              <span>Sold For</span>
+              <strong>${escapeHtml(fmtEGP(sellTot))}</strong>
+            </div>
+            <div class="metric-box">
+              <span>Net Profit</span>
+              <strong style="color:${prof >= 0 ? 'var(--profit-green)' : 'var(--soldout-red)'};">${escapeHtml(fmtSignedEGP(prof))}</strong>
+            </div>
+          </div>
+          <div class="sale-card-foot">
+            <span style="font-size:11px;color:var(--text-muted);">${escapeHtml(s.note || 'Manual entry')}</span>
+            <div style="display:flex;gap:6px;">
+              <button type="button" class="row-action-btn" onclick="openSaleModal('${sid}')">EDIT</button>
+              <button type="button" class="row-action-btn danger" onclick="deleteSale('${sid}')">DEL</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('') || `<div style="text-align:center;padding:28px;color:var(--text-muted);font-size:12px;">No sales logged yet. Tap "+ LOG TODAY'S SALE" below.</div>`;
+  }
+}
+
+function renderSalesDashboard() {
+  updateSalesCounter();
+  const items = getFilteredPeriodSales();
+  renderSalesKPIs(items);
+  renderSales7DayChart();
+  renderSalesBrandBreakdown(items);
+  renderSalesTopItems(items);
+  renderSalesLog(items);
+}
+
+window.openSaleModal = function(editId) {
+  populateSalesFormOptions();
+  adminState.editingSaleId = editId || null;
+  const item = editId ? (adminState.sales || []).find(x => x.id === editId) : null;
+
+  const titleEl = document.getElementById('saleModalTitle');
+  if (titleEl) titleEl.textContent = item ? 'EDIT SALE ENTRY' : "LOG TODAY'S SALE";
+
+  document.getElementById('saleEditId').value = item ? item.id : '';
+  document.getElementById('saleDate').value = item ? item.date : getTodayISO();
+  document.getElementById('salePayment').value = item ? (item.payment || 'Cash') : 'Cash';
+  document.getElementById('saleItemName').value = item ? (item.itemName || '') : '';
+
+  const brandSel = document.getElementById('saleBrand');
+  if (brandSel) {
+    const targetBrand = item ? item.brand : (brandSel.options.length ? brandSel.options[0].value : 'other');
+    if (Array.from(brandSel.options).some(o => o.value === targetBrand)) {
+      brandSel.value = targetBrand;
+    } else if (brandSel.options.length) {
+      brandSel.selectedIndex = 0;
+    }
+  }
+
+  document.getElementById('saleQty').value = item ? (item.qty || 1) : 1;
+  document.getElementById('saleBuyPrice').value = item ? item.buyPrice : '';
+  document.getElementById('saleSellPrice').value = item ? item.sellPrice : '';
+  document.getElementById('saleNote').value = item ? (item.note || '') : '';
+
+  updateLiveProfitPreview();
+  const modal = document.getElementById('saleModal');
+  if (modal) modal.classList.add('active');
+};
+
+window.closeSaleModal = function() {
+  const modal = document.getElementById('saleModal');
+  if (modal) modal.classList.remove('active');
+};
+
+window.handleSaleItemInput = function() {
+  const val = (document.getElementById('saleItemName').value || '').trim().toLowerCase();
+  if (!val) return;
+  const products = (adminState.catalog && adminState.catalog.products) || [];
+  const match = products.find(p => (p.name || '').trim().toLowerCase() === val);
+  if (match && match.brand) {
+    const brandSel = document.getElementById('saleBrand');
+    if (brandSel && Array.from(brandSel.options).some(o => o.value === match.brand)) {
+      brandSel.value = match.brand;
+    }
+  }
+};
+
+window.adjustSaleQty = function(delta) {
+  const inp = document.getElementById('saleQty');
+  if (!inp) return;
+  const next = Math.max(1, (parseInt(inp.value, 10) || 1) + delta);
+  inp.value = next;
+  updateLiveProfitPreview();
+};
+
+window.updateLiveProfitPreview = function() {
+  const qty = Math.max(1, Number(document.getElementById('saleQty').value) || 1);
+  const buy = Number(document.getElementById('saleBuyPrice').value) || 0;
+  const sell = Number(document.getElementById('saleSellPrice').value) || 0;
+  const totCost = buy * qty;
+  const totRev = sell * qty;
+  const profit = totRev - totCost;
+  const margin = totRev > 0 ? Math.round((profit / totRev) * 100) : 0;
+
+  const box = document.getElementById('profitPreviewBox');
+  if (box) box.classList.toggle('is-loss', profit < 0);
+
+  const valEl = document.getElementById('previewProfitVal');
+  if (valEl) {
+    valEl.textContent = fmtSignedEGP(profit);
+    valEl.style.color = profit >= 0 ? 'var(--profit-green)' : 'var(--soldout-red)';
+  }
+  const metaEl = document.getElementById('previewMeta');
+  if (metaEl) metaEl.textContent = `Rev: ${fmtEGP(totRev)} • Cost: ${fmtEGP(totCost)}`;
+
+  const marginEl = document.getElementById('previewMargin');
+  if (marginEl) {
+    marginEl.textContent = `${margin}% Margin`;
+    marginEl.style.color = profit >= 0 ? 'var(--profit-green)' : 'var(--soldout-red)';
+  }
+};
+
+window.handleSaveSale = async function(e) {
+  e.preventDefault();
+  const editId = document.getElementById('saleEditId').value || adminState.editingSaleId;
+  const entry = {
+    id: editId || ('sale_' + Date.now().toString(36)),
+    date: document.getElementById('saleDate').value || getTodayISO(),
+    payment: document.getElementById('salePayment').value || 'Cash',
+    itemName: document.getElementById('saleItemName').value.trim(),
+    brand: document.getElementById('saleBrand').value || 'other',
+    qty: Math.max(1, Number(document.getElementById('saleQty').value) || 1),
+    buyPrice: Number(document.getElementById('saleBuyPrice').value) || 0,
+    sellPrice: Number(document.getElementById('saleSellPrice').value) || 0,
+    note: document.getElementById('saleNote').value.trim(),
+    updatedAt: new Date().toISOString()
+  };
+
+  if (editId) {
+    const idx = adminState.sales.findIndex(x => x.id === editId);
+    if (idx >= 0) adminState.sales[idx] = entry;
+    else adminState.sales.unshift(entry);
+  } else {
+    adminState.sales.unshift(entry);
+  }
+
+  closeSaleModal();
+  renderSalesDashboard();
+  const synced = await syncSalesToCloud();
+  const net = (entry.sellPrice - entry.buyPrice) * entry.qty;
+  showToast(synced ? `✓ Sale Synced! Profit: ${fmtSignedEGP(net)}` : `✓ Sale Saved Locally! Profit: ${fmtSignedEGP(net)}`);
+};
+
+window.deleteSale = async function(id) {
+  const target = (adminState.sales || []).find(s => s.id === id);
+  if (!target) return;
+  if (!confirm(`Delete sale entry "${target.itemName}"?`)) return;
+
+  adminState.sales = adminState.sales.filter(s => s.id !== id);
+  renderSalesDashboard();
+  const synced = await syncSalesToCloud();
+  showToast(synced ? '✓ Entry removed & cloud synced' : 'Entry removed');
+};
+
+window.exportSalesCSV = function() {
+  const items = getFilteredPeriodSales();
+  const csvEsc = v => `"${String(v == null ? '' : v).replace(/"/g, '""')}"`;
+  const rows = [['Date', 'Item', 'Brand', 'Qty', 'Bought For (Unit)', 'Sold For (Unit)', 'Total Cost', 'Total Revenue', 'Total Net Profit', 'Payment', 'Note']];
+  items.forEach(s => {
+    const q = Math.max(1, Number(s.qty) || 1);
+    const buyTot = (Number(s.buyPrice) || 0) * q;
+    const sellTot = (Number(s.sellPrice) || 0) * q;
+    rows.push([
+      s.date,
+      csvEsc(s.itemName),
+      csvEsc(getSalesBrandName(s.brand)),
+      q,
+      Number(s.buyPrice) || 0,
+      Number(s.sellPrice) || 0,
+      buyTot,
+      sellTot,
+      sellTot - buyTot,
+      csvEsc(s.payment || 'Cash'),
+      csvEsc(s.note || '')
+    ]);
+  });
+
+  const blob = new Blob([rows.map(r => r.join(',')).join('\n')], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `koko_sales_${adminState.salesPeriod}_${getTodayISO()}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('Downloaded Sales CSV Report');
+};
