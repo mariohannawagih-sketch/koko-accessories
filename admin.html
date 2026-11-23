@@ -4,70 +4,72 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>KOKO ACCESSORIES &mdash; Admin Management Portal</title>
-  
-  <!-- Tailwind CSS CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
 
-  <!-- Google Fonts: Bodoni Moda & Inter -->
+  <!-- Immediate Theme Initialization (defaults to eye-friendly dark mode) -->
+  <script>
+    (function() {
+      try {
+        const saved = localStorage.getItem('koko_theme');
+        if (saved === 'light') {
+          document.documentElement.classList.remove('dark');
+        } else {
+          document.documentElement.classList.add('dark');
+        }
+      } catch (e) {
+        document.documentElement.classList.add('dark');
+      }
+    })();
+  </script>
+
+  <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..900;1,6..96,400..900&family=Inter:wght@200;300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..900;1,6..96,400..900&family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
 
   <link rel="stylesheet" href="styles.css">
 </head>
-<body class="bg-[#fafafa] text-black">
+<body>
 
   <!-- ==========================================
-       1. ADMIN LOGIN SCREEN (Password / Gmail Gate)
+       1. ADMIN LOGIN SCREEN
        ========================================== -->
-  <div id="loginGate" class="min-h-screen flex items-center justify-center p-6 bg-neutral-100">
-    <div class="bg-white border border-neutral-300 p-8 sm:p-12 w-full max-w-md shadow-xl">
-      <div class="text-center mb-8">
-        <h1 class="zara-wordmark text-3xl font-extrabold tracking-tight uppercase mb-1">KOKO</h1>
-        <span class="block text-[9px] tracking-[0.3em] uppercase text-neutral-400 font-sans font-semibold">
-          ADMIN ATELIER PORTAL
+  <div id="loginGate" class="login-stage">
+    <div class="login-card">
+      <div style="text-align:center;margin-bottom:24px;">
+        <div style="display:inline-flex;align-items:center;gap:10px;margin-bottom:8px;">
+          <span class="de-flag-slash" aria-hidden="true">
+            <span class="de-black"></span>
+            <span class="de-red"></span>
+            <span class="de-gold"></span>
+          </span>
+          <h1 class="brand-title font-racing" style="font-size:22px;">KOKO ADMIN</h1>
+        </div>
+        <span style="display:block;font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:var(--text-muted);font-weight:700;">
+          PC &amp; MOBILE CONTROL PORTAL
         </span>
       </div>
 
-      <p class="text-xs uppercase text-neutral-500 tracking-wide text-center mb-6">
-        Sign in with your admin credentials to manage accessories, photos, and categories.
+      <p style="font-size:12px;color:var(--text-sub);text-align:center;margin-bottom:20px;line-height:1.5;">
+        Sign in to manage accessories, phone photos, Sold Out status, and car brands.
       </p>
 
-      <form id="adminLoginForm" onsubmit="handleAdminLogin(event)" class="space-y-4">
+      <form id="adminLoginForm" onsubmit="handleAdminLogin(event)" style="display:flex;flex-direction:column;gap:14px;">
         <div>
-          <label class="block text-[10px] uppercase font-bold tracking-zara-wide text-neutral-600 mb-1">
-            Admin Gmail / Email
-          </label>
-          <input 
-            type="email" 
-            id="adminEmailInput" 
-            value=""
-            required
-            class="w-full border border-neutral-300 p-3 text-xs focus:border-black focus:outline-none" 
-            placeholder="koko@gmail.com"
-          />
+          <label class="form-label" for="adminEmailInput">Admin Gmail / Email</label>
+          <input type="email" id="adminEmailInput" required class="form-field" placeholder="koko@gmail.com" />
         </div>
 
         <div>
-          <label class="block text-[10px] uppercase font-bold tracking-zara-wide text-neutral-600 mb-1">
-            Admin Password
-          </label>
-          <input 
-            type="password" 
-            id="adminPassInput" 
-            value=""
-            required
-            class="w-full border border-neutral-300 p-3 text-xs focus:border-black focus:outline-none" 
-            placeholder="••••••••"
-          />
+          <label class="form-label" for="adminPassInput">Admin Password</label>
+          <input type="password" id="adminPassInput" required class="form-field" placeholder="••••••••" />
         </div>
 
-        <button type="submit" class="btn-black w-full py-3.5 text-xs font-semibold mt-4">
+        <button type="submit" class="btn-black" style="width:100%;height:44px;margin-top:6px;">
           SIGN IN TO ADMIN PANEL
         </button>
 
-        <div class="text-center pt-4">
-          <a href="index.html" class="text-[11px] uppercase tracking-zara text-neutral-500 hover:text-black underline">
+        <div style="text-align:center;padding-top:10px;">
+          <a href="index.html" style="font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);text-decoration:underline;">
             &larr; Back to Storefront
           </a>
         </div>
@@ -76,209 +78,152 @@
   </div>
 
   <!-- ==========================================
-       2. ADMIN DASHBOARD (When Logged In)
+       2. ADMIN DASHBOARD (PC TABLE + PHONE TOUCH CARDS)
        ========================================== -->
-  <div id="adminDashboard" class="hidden min-h-screen flex flex-col">
-    
-    <!-- Top Admin Header -->
-    <header class="bg-black text-white px-6 sm:px-12 py-4 flex flex-wrap items-center justify-between gap-4">
-      <div class="flex items-center gap-4">
-        <h2 class="zara-wordmark text-2xl tracking-tight uppercase">KOKO</h2>
-        <span class="text-[9px] uppercase tracking-[0.25em] text-neutral-400 font-semibold border-l border-neutral-700 pl-4 hidden sm:inline">
-          ADMIN CONTROL CENTER
-        </span>
-      </div>
+  <div id="adminDashboard" class="hidden" style="min-height:100vh;display:flex;flex-direction:column;">
 
-      <!-- Cloud Auto-Save Status Badge -->
-      <div id="syncStatusBadge" class="flex items-center gap-2 px-3 py-1.5 bg-neutral-900 border border-neutral-800">
-        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-        <span class="text-[10px] text-emerald-300 font-bold tracking-zara uppercase">
-          CLOUD DATABASE CONNECTED &bull; ONLINE AUTO-SAVE
-        </span>
-      </div>
+    <header class="site-header">
+      <div class="koko-container">
+        <div class="header-inner">
+          <div class="brand-left">
+            <span class="de-flag-slash" aria-hidden="true">
+              <span class="de-black"></span>
+              <span class="de-red"></span>
+              <span class="de-gold"></span>
+            </span>
+            <div>
+              <span class="brand-title font-racing" style="font-size:16px;">KOKO ADMIN</span>
+              <span class="brand-sub-line"></span>
+            </div>
+            <div id="syncStatusBadge" class="cloud-badge" title="Cloud Database Sync Status">
+              <span class="cloud-dot"></span>
+              <span class="cloud-text">CLOUD LIVE</span>
+            </div>
+          </div>
 
-      <!-- Action Buttons -->
-      <div class="flex items-center gap-3 text-xs uppercase tracking-zara">
-        <a href="https://koko-accessories.pages.dev/" target="_blank" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3.5 py-1.5 text-[10px] flex items-center gap-1 shadow transition-colors">
-          <span>VIEW LIVE STOREFRONT</span> &nearr;
-        </a>
-        <button onclick="handleAdminLogout()" class="border border-neutral-700 hover:border-white px-3 py-1.5 text-[10px]">
-          LOGOUT
-        </button>
+          <div class="header-right">
+            <button type="button" class="header-btn" onclick="toggleAdminTheme()" aria-label="Toggle Dark / Light Mode">
+              <span id="adminThemeIcon">🌙</span>
+              <span id="adminThemeLabel">DARK</span>
+            </button>
+            <a href="index.html" class="header-btn" title="Open Storefront">
+              <span>STORE</span>
+              <span class="desktop-store-text">FRONT</span>
+            </a>
+            <button type="button" onclick="openAddAccessoryModal()" class="header-btn btn-primary-pill desktop-add-btn">
+              + ADD ACCESSORY
+            </button>
+            <button type="button" onclick="handleAdminLogout()" class="header-btn" title="Sign Out">
+              OUT
+            </button>
+          </div>
+        </div>
+
+        <!-- Swipeable Admin Tabs -->
+        <div class="tabs-row">
+          <button id="tabBtnAccessories" type="button" onclick="switchAdminTab('accessories')" class="tab-btn active">
+            ACCESSORIES (<span id="tabProdCount">0</span>)
+          </button>
+          <button id="tabBtnCategories" type="button" onclick="switchAdminTab('categories')" class="tab-btn">
+            CATEGORIES (<span id="tabCatCount">0</span>)
+          </button>
+          <button id="tabBtnBrands" type="button" onclick="switchAdminTab('brands')" class="tab-btn">
+            CAR BRANDS (<span id="tabBrandCount">0</span>)
+          </button>
+          <button id="tabBtnExport" type="button" onclick="switchAdminTab('export')" class="tab-btn">
+            BACKUP
+          </button>
+        </div>
       </div>
     </header>
 
-    <!-- Admin Nav Tabs -->
-    <div class="bg-white border-b border-neutral-200 px-6 sm:px-12 flex gap-6 overflow-x-auto">
-      <button 
-        id="tabBtnAccessories" 
-        onclick="switchAdminTab('accessories')" 
-        class="py-4 text-xs uppercase tracking-zara-wide font-bold border-b-2 border-black text-black"
-      >
-        ACCESSORIES LIST &amp; UPLOAD
-      </button>
-      <button 
-        id="tabBtnCategories" 
-        onclick="switchAdminTab('categories')" 
-        class="py-4 text-xs uppercase tracking-zara-wide font-medium text-neutral-500 hover:text-black border-b-2 border-transparent"
-      >
-        MANAGE CATEGORIES
-      </button>
-      <button 
-        id="tabBtnBrands" 
-        onclick="switchAdminTab('brands')" 
-        class="py-4 text-xs uppercase tracking-zara-wide font-medium text-neutral-500 hover:text-black border-b-2 border-transparent"
-      >
-        MANAGE CAR BRANDS
-      </button>
-      <button 
-        id="tabBtnExport" 
-        onclick="switchAdminTab('export')" 
-        class="py-4 text-xs uppercase tracking-zara-wide font-medium text-neutral-500 hover:text-black border-b-2 border-transparent"
-      >
-        EXPORT / BACKUP
-      </button>
-    </div>
+    <main class="koko-container" style="flex:1;padding-bottom:32px;">
 
-    <!-- Main Content Area -->
-    <main class="flex-1 max-w-[1500px] w-full mx-auto p-6 sm:p-10">
-
-      <!-- ==============================================
-           TAB 1: ACCESSORIES MANAGER
-           ============================================== -->
+      <!-- TAB 1: ACCESSORIES -->
       <div id="tabContentAccessories">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-          <div>
-            <h3 class="font-editorial text-2xl uppercase tracking-wider text-black">CAR ACCESSORIES</h3>
-            <p class="text-xs uppercase text-neutral-500 tracking-zara">
-              Upload photos (Drag &amp; Drop), set car fitment, add or remove accessories.
-            </p>
+        <div class="toolbar-card">
+          <div class="search-select-row">
+            <div class="admin-input-box">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text-muted)"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+              <input id="adminSearchInput" type="text" placeholder="Search accessory name, Audi, Cupra, Key..." oninput="renderAdminAccessoriesTable()" />
+            </div>
+            <select id="adminFilterBrand" onchange="renderAdminAccessoriesTable()" class="admin-select-box"></select>
           </div>
-          <button onclick="openAddAccessoryModal()" class="btn-black py-3 px-6 text-xs">
-            + ADD NEW ACCESSORY
-          </button>
+
+          <div class="status-chips-row">
+            <div class="status-chips">
+              <button type="button" class="chip-btn active" onclick="setAdminStatusFilter('all', this)">ALL (<span id="cntStatusAll">0</span>)</button>
+              <button type="button" class="chip-btn" onclick="setAdminStatusFilter('instock', this)">🟢 IN STOCK (<span id="cntStatusIn">0</span>)</button>
+              <button type="button" class="chip-btn" onclick="setAdminStatusFilter('soldout', this)">🔴 SOLD OUT (<span id="cntStatusOut">0</span>)</button>
+            </div>
+            <span id="adminTotalItemsBadge" style="font-size:11px;color:var(--text-muted);font-weight:600;text-transform:uppercase;">0 ACCESSORIES</span>
+          </div>
         </div>
 
-        <!-- Filter Bar in Admin -->
-        <div class="bg-white p-4 border border-neutral-200 mb-6 flex flex-wrap gap-4 items-center justify-between">
-          <div class="flex items-center gap-3">
-            <span class="text-[10px] uppercase font-bold tracking-zara text-neutral-500">FILTER BY CAR:</span>
-            <select id="adminFilterBrand" onchange="renderAdminAccessoriesTable()" class="border border-neutral-300 p-2 text-xs uppercase">
-              <!-- Dynamically populated -->
-            </select>
-          </div>
-          <span id="adminTotalItemsBadge" class="text-xs uppercase tracking-zara font-semibold text-neutral-500">
-            0 ACCESSORIES
-          </span>
-        </div>
-
-        <!-- Table / Cards of Accessories -->
-        <div class="bg-white border border-neutral-200 overflow-x-auto">
-          <table class="w-full text-left border-collapse text-xs">
+        <!-- PC View Table (>= 768px) -->
+        <div class="pc-table-wrap">
+          <table class="admin-table">
             <thead>
-              <tr class="bg-neutral-100 border-b border-neutral-200 uppercase tracking-zara text-[10px] text-neutral-500">
-                <th class="p-4 w-20">PHOTO</th>
-                <th class="p-4">ACCESSORY NAME</th>
-                <th class="p-4">CAR BRAND</th>
-                <th class="p-4">COMPATIBILITY FITMENT</th>
-                <th class="p-4">CATEGORY</th>
-                <th class="p-4 text-center">STATUS</th>
-                <th class="p-4 text-right">ACTION</th>
+              <tr>
+                <th>PHOTO</th>
+                <th>ACCESSORY NAME</th>
+                <th>CAR BRAND</th>
+                <th>COMPATIBILITY FITMENT</th>
+                <th>CATEGORY</th>
+                <th style="text-align:center;">STATUS</th>
+                <th style="text-align:right;">ACTION</th>
               </tr>
             </thead>
-            <tbody id="adminAccessoriesTableBody">
-              <!-- Rendered dynamically -->
-            </tbody>
+            <tbody id="adminAccessoriesTableBody"></tbody>
           </table>
         </div>
+
+        <!-- Mobile Touch Cards (< 768px) -->
+        <div id="adminMobileCardsList" class="mobile-cards-list"></div>
       </div>
 
-      <!-- ==============================================
-           TAB 2: CATEGORIES MANAGER
-           ============================================== -->
+      <!-- TAB 2: CATEGORIES -->
       <div id="tabContentCategories" class="hidden">
-        <div class="max-w-2xl">
-          <h3 class="font-editorial text-2xl uppercase tracking-wider text-black mb-1">MANAGE CATEGORIES</h3>
-          <p class="text-xs uppercase text-neutral-500 tracking-zara mb-6">
-            Add new categories or delete existing ones. Changes update the customer storefront immediately.
-          </p>
-
-          <!-- Add Category Form -->
-          <div class="bg-white p-6 border border-neutral-200 mb-8 flex gap-3">
-            <input 
-              type="text" 
-              id="newCategoryInput" 
-              placeholder="e.g. CARBON SPOILERS, EXHAUST TIPS, MATS..." 
-              class="flex-1 border border-neutral-300 p-3 text-xs uppercase tracking-wide focus:border-black focus:outline-none"
-            />
-            <button onclick="handleAddNewCategory()" class="btn-black py-3 px-6 text-xs whitespace-nowrap">
-              + ADD CATEGORY
-            </button>
+        <div class="toolbar-card" style="max-width:720px;">
+          <h3 class="font-racing" style="font-size:16px;text-transform:uppercase;">MANAGE CATEGORIES</h3>
+          <p style="font-size:12px;color:var(--text-sub);">Add or remove accessory categories. Syncs immediately to the storefront.</p>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <input type="text" id="newCategoryInput" placeholder="e.g. CARBON SPOILERS, EXHAUST TIPS..." class="form-field" style="flex:1;min-width:180px;" />
+            <button type="button" onclick="handleAddNewCategory()" class="btn-black">+ ADD CATEGORY</button>
           </div>
-
-          <!-- Existing Categories List -->
-          <div class="bg-white border border-neutral-200">
-            <div class="p-4 bg-neutral-100 border-b border-neutral-200 text-[10px] uppercase font-bold tracking-zara text-neutral-500">
-              ACTIVE CATEGORIES
-            </div>
-            <ul id="adminCategoriesList" class="divide-y divide-neutral-200">
-              <!-- Rendered dynamically -->
-            </ul>
-          </div>
+        </div>
+        <div class="admin-list-panel">
+          <ul id="adminCategoriesList" style="list-style:none;"></ul>
         </div>
       </div>
 
-      <!-- ==============================================
-           TAB 3: CAR BRANDS MANAGER
-           ============================================== -->
+      <!-- TAB 3: CAR BRANDS -->
       <div id="tabContentBrands" class="hidden">
-        <div class="max-w-2xl">
-          <h3 class="font-editorial text-2xl uppercase tracking-wider text-black mb-1">MANAGE CAR BRANDS</h3>
-          <p class="text-xs uppercase text-neutral-500 tracking-zara mb-6">
-            Add any car make (e.g. Hyundai, Mercedes, BMW, Toyota, Honda, Kia, Nissan, etc.).
-          </p>
-
-          <!-- Add Brand Form -->
-          <div class="bg-white p-6 border border-neutral-200 mb-8 flex gap-3">
-            <input 
-              type="text" 
-              id="newBrandInput" 
-              placeholder="e.g. HONDA, NISSAN, VOLKSWAGEN..." 
-              class="flex-1 border border-neutral-300 p-3 text-xs uppercase tracking-wide focus:border-black focus:outline-none"
-            />
-            <button onclick="handleAddNewBrand()" class="btn-black py-3 px-6 text-xs whitespace-nowrap">
-              + ADD CAR BRAND
-            </button>
+        <div class="toolbar-card" style="max-width:720px;">
+          <h3 class="font-racing" style="font-size:16px;text-transform:uppercase;">MANAGE CAR BRANDS</h3>
+          <p style="font-size:12px;color:var(--text-sub);">Add or remove supported vehicle makes.</p>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <input type="text" id="newBrandInput" placeholder="e.g. HONDA, NISSAN, VOLKSWAGEN..." class="form-field" style="flex:1;min-width:180px;" />
+            <button type="button" onclick="handleAddNewBrand()" class="btn-black">+ ADD BRAND</button>
           </div>
-
-          <!-- Existing Brands List -->
-          <div class="bg-white border border-neutral-200">
-            <div class="p-4 bg-neutral-100 border-b border-neutral-200 text-[10px] uppercase font-bold tracking-zara text-neutral-500">
-              SUPPORTED CAR BRANDS
-            </div>
-            <ul id="adminBrandsList" class="divide-y divide-neutral-200">
-              <!-- Rendered dynamically -->
-            </ul>
-          </div>
+        </div>
+        <div class="admin-list-panel">
+          <ul id="adminBrandsList" style="list-style:none;"></ul>
         </div>
       </div>
 
-      <!-- ==============================================
-           TAB 4: EXPORT / BACKUP
-           ============================================== -->
+      <!-- TAB 4: BACKUP / EXPORT -->
       <div id="tabContentExport" class="hidden">
-        <div class="max-w-xl bg-white p-8 border border-neutral-200">
-          <h3 class="font-editorial text-2xl uppercase tracking-wider text-black mb-2">EXPORT CATALOG DATA</h3>
-          <p class="text-xs uppercase text-neutral-600 tracking-zara leading-relaxed mb-6">
-            All your uploaded photos, new accessories, and category changes are saved instantly in your browser. 
-            You can also download the updated <code>products.js</code> file to save it permanently into your project folder.
+        <div class="toolbar-card" style="max-width:600px;padding:20px;">
+          <h3 class="font-racing" style="font-size:16px;text-transform:uppercase;">EXPORT CATALOG DATA</h3>
+          <p style="font-size:12px;color:var(--text-sub);line-height:1.55;">
+            All your uploaded photos, Sold Out toggles, and new accessories save automatically to your Cloud Database. You can also download a backup copy of <code>products.js</code> anytime.
           </p>
-
-          <div class="space-y-4">
-            <button onclick="exportUpdatedProductsJS()" class="btn-black w-full py-4 text-xs font-semibold">
-              DOWNLOAD UPDATED PRODUCTS.JS FILE
+          <div style="display:flex;flex-direction:column;gap:10px;margin-top:6px;">
+            <button type="button" onclick="exportUpdatedProductsJS()" class="btn-black" style="width:100%;">
+              DOWNLOAD UPDATED PRODUCTS.JS BACKUP
             </button>
-            <button onclick="handleResetToDefaultData()" class="btn-outline w-full py-3 text-xs text-red-600 border-red-300 hover:bg-red-600 hover:text-white">
+            <button type="button" onclick="handleResetToDefaultData()" class="btn-outline" style="width:100%;color:var(--soldout-red);border-color:rgba(239,68,68,0.4);">
               RESET TO DEFAULT SAMPLE DATA
             </button>
           </div>
@@ -286,179 +231,119 @@
       </div>
 
     </main>
+
+    <!-- Sticky Bottom Mobile Add Button -->
+    <button type="button" onclick="openAddAccessoryModal()" class="mobile-add-fab">
+      + ADD NEW ACCESSORY
+    </button>
   </div>
 
-  <!-- ==============================================
-       ADD / EDIT ACCESSORY MODAL (WITH DRAG & DROP)
-       ============================================== -->
+  <!-- ==========================================
+       3. ADD / EDIT ACCESSORY MODAL / BOTTOM SHEET
+       ========================================== -->
   <div id="accessoryModal" class="modal-overlay" onclick="if(event.target === this) closeAccessoryModal()">
-    <div class="modal-box max-w-2xl p-6 sm:p-10">
-      
-      <div class="flex items-center justify-between pb-4 border-b border-neutral-200 mb-6">
+    <div class="modal-box narrow" onclick="event.stopPropagation()">
+      <div class="sheet-handle"></div>
+      <div class="modal-header">
         <div>
-          <span class="text-[10px] uppercase font-bold tracking-zara text-neutral-400">ACCESSORY ATELIER</span>
-          <h3 id="accessoryModalTitle" class="font-editorial text-2xl uppercase tracking-wider text-black">
-            ADD NEW ACCESSORY
-          </h3>
+          <span style="display:block;font-size:9.5px;font-weight:700;letter-spacing:0.12em;color:var(--text-muted);text-transform:uppercase;">ACCESSORY ATELIER</span>
+          <h3 id="accessoryModalTitle" class="modal-title font-racing">ADD NEW ACCESSORY</h3>
         </div>
-        <button onclick="closeAccessoryModal()" class="text-2xl font-light hover:text-neutral-500">&times;</button>
+        <button type="button" onclick="closeAccessoryModal()" class="modal-close">&times;</button>
       </div>
 
-      <form id="accessoryForm" onsubmit="handleSaveAccessory(event)" class="space-y-4">
+      <form id="accessoryForm" onsubmit="handleSaveAccessory(event)" class="modal-body" style="display:flex;flex-direction:column;gap:14px;">
         <input type="hidden" id="formAccessoryId" value="">
 
-        <!-- Name -->
+        <!-- Multi-Photo Upload Zone -->
         <div>
-          <label class="block text-[10px] uppercase font-bold tracking-zara text-neutral-600 mb-1">
-            Accessory Title / Name *
-          </label>
-          <input 
-            type="text" 
-            id="formAccessoryName" 
-            required
-            placeholder="e.g. N-Line Forged Carbon Steering Wheel" 
-            class="w-full border border-neutral-300 p-2.5 text-xs uppercase tracking-wide focus:border-black focus:outline-none"
-          />
-        </div>
-
-        <!-- Car Brand & Category (Grid) -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label class="block text-[10px] uppercase font-bold tracking-zara text-neutral-600 mb-1">
-              Car Brand *
-            </label>
-            <select id="formAccessoryBrand" required class="w-full border border-neutral-300 p-2.5 text-xs uppercase focus:border-black focus:outline-none">
-              <!-- Dynamically populated -->
-            </select>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;">
+            <label class="form-label" style="margin-bottom:0;">Photos (Phone Gallery / Camera or Drag &amp; Drop) *</label>
           </div>
-          <div>
-            <label class="block text-[10px] uppercase font-bold tracking-zara text-neutral-600 mb-1">
-              Category *
-            </label>
-            <select id="formAccessoryCategory" required class="w-full border border-neutral-300 p-2.5 text-xs uppercase focus:border-black focus:outline-none">
-              <!-- Dynamically populated -->
-            </select>
-          </div>
-        </div>
-
-        <!-- Fitment -->
-        <div>
-          <label class="block text-[10px] uppercase font-bold tracking-zara text-neutral-600 mb-1">
-            Compatible Car Models &amp; Years *
-          </label>
-          <input 
-            type="text" 
-            id="formAccessoryFitment" 
-            required
-            placeholder="e.g. Hyundai Elantra N, Sonata N-Line, Tucson (2020-2026)" 
-            class="w-full border border-neutral-300 p-2.5 text-xs uppercase tracking-wide focus:border-black focus:outline-none"
-          />
-        </div>
-
-        <!-- Description -->
-        <div>
-          <label class="block text-[10px] uppercase font-bold tracking-zara text-neutral-600 mb-1">
-            Description / Specifications
-          </label>
-          <textarea 
-            id="formAccessoryDesc" 
-            rows="2" 
-            placeholder="Materials, finish, touch feel, installation details..." 
-            class="w-full border border-neutral-300 p-2.5 text-xs uppercase tracking-wide focus:border-black focus:outline-none"
-          ></textarea>
-        </div>
-
-        <!-- MULTI-PHOTO UPLOAD ZONE (FRONT, BACK, ANGLES) -->
-        <div>
-          <div class="flex items-center justify-between mb-1">
-            <label class="block text-[10px] uppercase font-bold tracking-zara text-neutral-600">
-              Accessory Photos (Add Multiple: Front, Back, Angles) *
-            </label>
-            <span class="text-[9px] text-neutral-400 uppercase">You can select or drop multiple photos</span>
-          </div>
-          
-          <div 
-            id="dragDropZone" 
-            class="drag-drop-zone rounded-none"
+          <div
+            id="dragDropZone"
+            class="drag-drop-zone"
             ondragover="handleDragOver(event)"
             ondragleave="handleDragLeave(event)"
             ondrop="handleDropFile(event)"
             onclick="document.getElementById('fileUploadInput').click()"
           >
-            <input 
-              type="file" 
-              id="fileUploadInput" 
-              accept="image/*" 
-              multiple
-              class="hidden" 
-              onchange="handleFileSelect(event)"
-            />
-            <svg class="w-8 h-8 mx-auto text-neutral-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-            <p class="text-xs uppercase font-semibold text-black tracking-zara">
-              + DRAG &amp; DROP PHOTOS HERE (FRONT &amp; BACK)
-            </p>
-            <p class="text-[10px] uppercase text-neutral-400 mt-1">
-              Select multiple files or drop them one by one (.jpg, .png, .webp)
-            </p>
+            <input type="file" id="fileUploadInput" accept="image/*" multiple class="hidden" onchange="handleFileSelect(event)" />
+            <strong style="display:block;font-size:12px;color:var(--text-main);margin-bottom:2px;">
+              + TAP TO PICK PHOTOS OR TAKE PHOTO
+            </strong>
+            <span style="font-size:11px;color:var(--text-muted);">
+              Select multiple photos (Front, Back, Angles) &bull; .jpg, .png, .webp
+            </span>
           </div>
 
-          <!-- Multi-Photo Gallery Preview Container -->
-          <div id="photoPreviewContainer" class="hidden mt-3 p-3 bg-neutral-50 border border-neutral-200">
-            <div class="flex items-center justify-between pb-2 border-b border-neutral-200 mb-2">
-              <span class="text-[10px] uppercase font-bold tracking-zara text-black">
-                LOADED PHOTOS: <span id="photoCountBadge" class="text-neutral-500 font-semibold">(0)</span>
+          <div id="photoPreviewContainer" class="hidden" style="margin-top:10px;padding:10px;background:var(--bg-elevated);border:1px solid var(--border-soft);border-radius:12px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:8px;border-bottom:1px solid var(--border-soft);margin-bottom:8px;">
+              <span style="font-size:10.5px;font-weight:700;text-transform:uppercase;">
+                LOADED PHOTOS: <span id="photoCountBadge" style="color:var(--de-gold);">(0)</span>
               </span>
-              <button type="button" onclick="clearAllPhotos()" class="text-[9px] text-red-600 uppercase font-semibold hover:underline">
-                Clear All Photos
+              <button type="button" onclick="clearAllPhotos()" style="background:none;border:none;font-size:10.5px;font-weight:700;color:var(--soldout-red);cursor:pointer;text-transform:uppercase;">
+                Clear All
               </button>
             </div>
-            
-            <!-- Grid of photo thumbnails -->
-            <div id="photosListContainer" class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-              <!-- Rendered dynamically by renderPhotosGallery() -->
-            </div>
+            <div id="photosListContainer" style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;"></div>
           </div>
 
-          <!-- Or paste image URL -->
-          <div class="mt-2.5 flex items-center gap-2">
-            <input 
-              type="text" 
-              id="formImageUrlInput" 
-              placeholder="Or paste image web link (https://... or images/part.jpg)" 
-              class="flex-1 border border-neutral-300 p-2 text-xs font-mono focus:border-black focus:outline-none"
-            />
-            <button 
-              type="button" 
-              onclick="handleAddUrlPhoto()" 
-              class="btn-outline py-2 px-3 text-[10px] whitespace-nowrap"
-            >
-              + ADD PHOTO LINK
+          <div style="margin-top:8px;display:flex;gap:8px;">
+            <input type="text" id="formImageUrlInput" placeholder="Or paste image link (https://... or images/part.jpg)" class="form-field" style="flex:1;font-size:12px;" />
+            <button type="button" onclick="handleAddUrlPhoto()" class="btn-outline" style="padding:8px 12px;font-size:10.5px;white-space:nowrap;">
+              + ADD LINK
             </button>
           </div>
         </div>
 
-        <!-- Sold Out Toggle Switch -->
-        <div class="bg-neutral-50 border border-neutral-200 p-3.5 flex items-center justify-between">
+        <div>
+          <label class="form-label" for="formAccessoryName">Accessory Title / Name *</label>
+          <input type="text" id="formAccessoryName" required placeholder="e.g. AUDI RS5 GLOSS BLACK EMBLEM" class="form-field" />
+        </div>
+
+        <div class="form-2col">
           <div>
-            <span class="block text-xs font-bold uppercase tracking-wider text-black">SOLD OUT STATUS</span>
-            <span class="block text-[10px] text-neutral-500 uppercase mt-0.5">Toggle on to mark this accessory as Sold Out on the customer storefront</span>
+            <label class="form-label" for="formAccessoryBrand">Car Brand *</label>
+            <select id="formAccessoryBrand" required class="form-field"></select>
           </div>
-          <label class="relative inline-flex items-center cursor-pointer">
-            <input type="checkbox" id="formAccessorySoldOut" class="sr-only peer">
-            <div class="w-11 h-6 bg-neutral-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-600"></div>
+          <div>
+            <label class="form-label" for="formAccessoryCategory">Category *</label>
+            <select id="formAccessoryCategory" required class="form-field"></select>
+          </div>
+        </div>
+
+        <div>
+          <label class="form-label" for="formAccessoryFitment">Compatible Car Models &amp; Years *</label>
+          <input type="text" id="formAccessoryFitment" required placeholder="e.g. Audi A3 / S3 / RS3 (2020-2024)" class="form-field" />
+        </div>
+
+        <div>
+          <label class="form-label" for="formAccessoryDesc">Description / Specifications</label>
+          <textarea id="formAccessoryDesc" rows="2" placeholder="Materials, finish, installation details..." class="form-field"></textarea>
+        </div>
+
+        <!-- Sold Out Toggle Switch -->
+        <div class="switch-row">
+          <div>
+            <strong style="display:block;font-size:12px;color:var(--text-main);">MARK AS SOLD OUT</strong>
+            <span style="font-size:10.5px;color:var(--text-muted);">Shows Sold Out badge on customer storefront</span>
+          </div>
+          <label class="switch-wrap">
+            <input type="checkbox" id="formAccessorySoldOut" />
+            <span class="switch-slider"></span>
           </label>
         </div>
 
-        <div class="pt-4 border-t border-neutral-200 flex gap-3">
-          <button type="submit" class="flex-1 btn-black py-3 text-xs font-semibold">
+        <div style="display:flex;gap:10px;padding-top:6px;">
+          <button type="submit" class="btn-black" style="flex:1;height:44px;">
             SAVE ACCESSORY
           </button>
-          <button type="button" onclick="closeAccessoryModal()" class="btn-outline py-3 text-xs">
+          <button type="button" onclick="closeAccessoryModal()" class="btn-outline" style="height:44px;">
             CANCEL
           </button>
         </div>
       </form>
-
     </div>
   </div>
 

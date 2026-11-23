@@ -4,15 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>KOKO ACCESSORIES — Luxury Car Accessories Showcase</title>
-  <meta name="description" content="Select your car to discover tailored accessories for Hyundai, Mercedes-Benz, BMW, Audi, Toyota, Kia, Porsche and more.">
-  
-  <!-- Tailwind CSS CDN with Dark Mode Class Strategy -->
-  <script src="https://cdn.tailwindcss.com"></script>
+  <meta name="description" content="Select your car to discover tailored accessories for Audi, Cupra, Mini Cooper, Skoda, BMW, Mercedes-Benz, Porsche and more.">
+
+  <!-- Immediate Theme Initialization (defaults to eye-friendly dark mode) -->
   <script>
-    tailwind.config = {
-      darkMode: 'class'
-    };
-    // Immediate Theme Initialization (defaults to dark mode)
     (function() {
       try {
         const saved = localStorage.getItem('koko_theme');
@@ -27,227 +22,164 @@
     })();
   </script>
 
-  <!-- Google Fonts: Bodoni Moda, Inter & Space Grotesk (Motorsport Racing) -->
+  <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..900;1,6..96,400..900&family=Inter:wght@200;300;400;500;600;700&family=Space+Grotesk:wght@500;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..900;1,6..96,400..900&family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
 
-  <!-- Custom Zara Stylesheet -->
+  <!-- Custom Stylesheet -->
   <link rel="stylesheet" href="styles.css">
 </head>
-<body class="bg-white text-black selection:bg-black selection:text-white">
+<body>
 
-  <!-- 1. ANNOUNCEMENT TICKER WITH GERMAN MOTORSPORT ACCENTS -->
-  <div class="announcement-bar">
-    <div class="marquee-track">
-      <span class="mx-6 inline-flex items-center gap-2">
-        <span class="de-dots"><span class="de-dot-black"></span><span class="de-dot-red"></span><span class="de-dot-gold"></span></span>
-        <span>KOKO ACCESSORIES &mdash; GERMAN MOTORSPORT &amp; LUXURY CHASSIS ATELIER</span>
-      </span>
-      <span class="mx-6 inline-flex items-center gap-2">
-        <span class="de-dots"><span class="de-dot-black"></span><span class="de-dot-red"></span><span class="de-dot-gold"></span></span>
-        <span>SELECT YOUR VEHICLE TO BROWSE COMPATIBLE ACCESSORIES</span>
-      </span>
-      <span class="mx-6 inline-flex items-center gap-2">
-        <span class="de-dots"><span class="de-dot-black"></span><span class="de-dot-red"></span><span class="de-dot-gold"></span></span>
-        <span>CUPRA, MINI COOPER, BMW, MERCEDES-BENZ, PORSCHE, AUDI, SKODA &amp; SEAT</span>
-      </span>
-      <span class="mx-6 inline-flex items-center gap-2">
-        <span class="de-dots"><span class="de-dot-black"></span><span class="de-dot-red"></span><span class="de-dot-gold"></span></span>
-        <span>WHATSAPP INQUIRY: 01117781675</span>
-      </span>
-      <span class="mx-6 inline-flex items-center gap-2">
-        <span class="de-dots"><span class="de-dot-black"></span><span class="de-dot-red"></span><span class="de-dot-gold"></span></span>
-        <span>KOKO ACCESSORIES &mdash; GERMAN MOTORSPORT &amp; LUXURY CHASSIS ATELIER</span>
-      </span>
-      <span class="mx-6 inline-flex items-center gap-2">
-        <span class="de-dots"><span class="de-dot-black"></span><span class="de-dot-red"></span><span class="de-dot-gold"></span></span>
-        <span>SELECT YOUR VEHICLE TO BROWSE COMPATIBLE ACCESSORIES</span>
-      </span>
-    </div>
-  </div>
-
-  <!-- 2. MOTORSPORT LUXURY HEADER -->
-  <header class="zara-header px-6 sm:px-12 py-4">
-    <div class="max-w-[1600px] mx-auto flex items-center justify-between gap-4">
-      
-      <!-- Brand Logo - German Motorsport Styled -->
-      <a href="index.html" class="inline-flex items-center gap-3 sm:gap-3.5 group select-none py-1">
-        <!-- German Flag Racing Slanted Crest -->
-        <div class="de-flag-slash" aria-hidden="true">
-          <span class="de-black"></span>
-          <span class="de-red"></span>
-          <span class="de-gold"></span>
+  <!-- 1. STICKY RESPONSIVE HEADER -->
+  <header class="site-header">
+    <div class="koko-container">
+      <div class="header-inner">
+        <div class="brand-left">
+          <a href="index.html" class="brand-lockup" onclick="resetCarFilter(); return false;">
+            <span class="de-flag-slash" aria-hidden="true">
+              <span class="de-black"></span>
+              <span class="de-red"></span>
+              <span class="de-gold"></span>
+            </span>
+            <div>
+              <span class="brand-title font-racing">KOKO ACCESSORIES</span>
+              <span class="brand-sub-line"></span>
+            </div>
+          </a>
         </div>
 
-        <div>
-          <div class="flex items-center gap-1.5 sm:gap-2">
-            <span class="text-xl sm:text-2xl font-black uppercase tracking-tight text-black dark:text-white font-racing leading-none">
-              KOKO
-            </span>
-            <span class="text-xl sm:text-2xl font-bold uppercase tracking-wider text-neutral-800 dark:text-neutral-100 font-racing leading-none">
-              ACCESSORIES
-            </span>
+        <div class="header-right">
+          <div class="search-box desktop-search-box">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text-muted)"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+            <input type="text" id="searchInput" class="search-input" placeholder="Search car model or part..." />
           </div>
-          <!-- Integrated German Tricolor Line -->
-          <div class="flex items-center gap-2 mt-1">
-            <div class="h-[2px] w-24 sm:w-28 bg-gradient-to-r from-neutral-800 via-[#E10600] to-[#FFCC00] dark:from-white dark:via-[#E10600] dark:to-[#FFCC00] rounded-full"></div>
-            <span class="text-[7.5px] sm:text-[8px] font-mono uppercase tracking-[0.22em] text-neutral-400 font-semibold">
-              GERMAN ATELIER
-            </span>
-          </div>
+
+          <button type="button" class="header-btn mobile-search-btn" onclick="toggleMobileSearch()" aria-label="Search accessories">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+          </button>
+
+          <button id="themeToggleBtn" type="button" class="header-btn" onclick="toggleTheme()" aria-label="Toggle Dark / Light Mode">
+            <span id="themeToggleIcon">🌙</span>
+            <span id="themeToggleLabel">DARK</span>
+          </button>
+
+          <a href="admin.html" class="header-btn desktop-admin-btn" title="Open Admin Dashboard">
+            ADMIN &rarr;
+          </a>
         </div>
-      </a>
-
-      <!-- Right: Search, Theme Toggle & Admin Link -->
-      <div class="flex items-center gap-3 sm:gap-4">
-        <!-- Live Search -->
-        <div class="relative hidden sm:block w-56 md:w-72 lg:w-80">
-          <input 
-            type="text" 
-            id="searchInput" 
-            placeholder="SEARCH BY CAR MODEL OR PART..." 
-            class="w-full text-xs uppercase tracking-zara border-b border-black dark:border-neutral-700 py-1.5 focus:outline-none placeholder-neutral-400 dark:placeholder-neutral-500 font-medium bg-transparent text-black dark:text-white transition-colors"
-          />
-        </div>
-
-        <!-- THEME TOGGLE (LIGHT / DARK) -->
-        <button 
-          id="themeToggleBtn"
-          onclick="toggleTheme()"
-          class="flex items-center gap-2 border border-neutral-300 dark:border-neutral-800 bg-neutral-100 dark:bg-neutral-900 px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-black dark:text-neutral-200 hover:border-black dark:hover:border-neutral-600 transition-all rounded select-none cursor-pointer"
-          title="Toggle Dark / Light Mode"
-          aria-label="Toggle Theme"
-        >
-          <span id="themeToggleIcon">🌙</span>
-          <span id="themeToggleLabel" class="text-[10px] font-mono">DARK</span>
-        </button>
-
-        <!-- Admin Portal Link -->
-        <a 
-          href="admin.html" 
-          class="text-[11px] uppercase tracking-zara-wide font-semibold text-neutral-600 dark:text-neutral-300 hover:text-black dark:hover:text-white border border-neutral-300 dark:border-neutral-800 hover:border-black dark:hover:border-neutral-600 px-3 py-1.5 transition-colors rounded whitespace-nowrap"
-          title="Open Admin Dashboard"
-        >
-          ADMIN &rarr;
-        </a>
       </div>
 
+      <div id="mobileSearchDrawer" class="mobile-search-drawer">
+        <div class="search-box" style="width:100%;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text-muted)"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+          <input type="text" id="searchInputMobile" class="search-input" placeholder="Search Audi, Cupra, Key Cover, Pedals..." />
+          <button type="button" onclick="clearMobileSearch()" style="background:none;border:none;color:var(--text-muted);font-size:16px;cursor:pointer;">&times;</button>
+        </div>
+      </div>
     </div>
   </header>
 
-  <!-- 3. MOBILE SEARCH BAR -->
-  <div class="sm:hidden px-6 pt-4 pb-2">
-    <input 
-      type="text" 
-      id="searchInputMobile" 
-      oninput="document.getElementById('searchInput').value = this.value; state.searchQuery = this.value; renderAccessories();"
-      placeholder="SEARCH CAR MODEL (ELANTRA, C-CLASS, M3...)" 
-      class="w-full text-xs uppercase tracking-zara border-b border-black dark:border-neutral-700 py-2 focus:outline-none placeholder-neutral-400 dark:placeholder-neutral-500 bg-transparent text-black dark:text-white transition-colors"
-    />
-  </div>
+  <!-- 2. MAIN CONTENT -->
+  <main id="accessoriesSection" class="koko-container">
 
-  <!-- 4. STEP 1: CHOOSE YOUR CAR (MAIN FEATURE OF THE WEBSITE) -->
-  <section class="max-w-[1600px] mx-auto px-6 sm:px-12 pt-10 pb-8">
-    <div class="text-center max-w-xl mx-auto mb-8">
-      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 mb-3">
-        <div class="de-dots">
-          <span class="de-dot-black"></span>
-          <span class="de-dot-red"></span>
-          <span class="de-dot-gold"></span>
+    <!-- Step 1: Vehicle Selector (Stocked cards on PC, Choose Bar + Swipe Pills on Mobile) -->
+    <section class="vehicle-section">
+      <div class="section-top-row">
+        <span class="step-eyebrow">Step 1 &bull; Select Your Vehicle</span>
+        <span style="font-size:11px;color:var(--text-muted);">Showing in-stock brands first &bull; Tap + More Brands for all makes</span>
+      </div>
+
+      <!-- PC Stocked Car Cards Row -->
+      <div id="carBrandsContainer" class="pc-brand-grid"></div>
+
+      <!-- Mobile Compact Choose Your Car Button -->
+      <button type="button" class="mobile-vehicle-trigger" onclick="openCarModal()">
+        <div>
+          <span class="car-trigger-label">Step 1 &bull; Your Vehicle</span>
+          <div class="car-trigger-value">
+            <span id="mobileActiveCarName" class="font-racing">ALL CARS</span>
+            <span id="mobileActiveCarCount" class="car-count-chip">0</span>
+          </div>
         </div>
-        <span class="text-[9px] uppercase tracking-[0.25em] text-[#E10600] dark:text-[#FFCC00] font-mono font-bold">
-          STEP 1 &bull; VEHICLE SELECTOR
-        </span>
-      </div>
-      <h2 class="font-racing text-3xl sm:text-4xl uppercase tracking-wider text-black dark:text-white font-black">
-        CHOOSE YOUR CAR
-      </h2>
-      <p class="text-xs uppercase tracking-zara text-neutral-500 dark:text-neutral-400 mt-2 font-light">
-        Click your vehicle make to see only the accessories that fit your car.
-      </p>
-    </div>
+        <span class="change-pill">CHOOSE CAR &#9662;</span>
+      </button>
 
-    <!-- Car Brands Cards Grid -->
-    <div id="carBrandsContainer" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
-      <!-- Rendered dynamically via app.js -->
-    </div>
-  </section>
+      <!-- Mobile Quick Stocked Brand Swipe Row -->
+      <div id="mobileQuickBrands" class="mobile-quick-brands"></div>
+    </section>
 
-  <!-- 5. ACTIVE VEHICLE BANNER (Shown when a brand is selected) -->
-  <div id="activeCarBanner" class="hidden max-w-[1600px] mx-auto px-6 sm:px-12 mb-6">
-    <div class="bg-black dark:bg-[#15161b] text-white border border-neutral-800 dark:border-[#26272e] px-5 py-3 flex items-center justify-between rounded">
-      <div class="flex items-center gap-3">
-        <span class="w-2 h-2 rounded-full bg-white animate-pulse"></span>
-        <span class="text-[11px] uppercase tracking-zara-wide text-neutral-300">CURRENTLY VIEWING ACCESSORIES FOR:</span>
-        <span id="activeCarTitle" class="text-xs uppercase font-bold tracking-widest text-[#FFCC00]">HYUNDAI</span>
+    <!-- Active Filter Notice -->
+    <div id="activeCarBanner" class="active-car-banner hidden">
+      <div style="display:flex;align-items:center;gap:8px;min-width:0;">
+        <span style="width:8px;height:8px;border-radius:99px;background:var(--de-red);flex-shrink:0;"></span>
+        <span style="color:var(--text-sub);text-transform:uppercase;font-size:10.5px;">Showing accessories for:</span>
+        <strong id="activeCarTitle" style="color:var(--de-gold);text-transform:uppercase;font-size:12px;">ALL CARS</strong>
       </div>
-      <button 
-        onclick="resetCarFilter()" 
-        class="text-[10px] uppercase tracking-zara-wide text-neutral-300 hover:text-white underline"
-      >
-        SHOW ALL CARS &times;
+      <button type="button" onclick="resetCarFilter()" style="background:none;border:none;color:var(--text-main);font-size:11px;font-weight:700;text-decoration:underline;cursor:pointer;white-space:nowrap;">
+        SHOW ALL &times;
       </button>
     </div>
-  </div>
 
-  <!-- 6. ACCESSORIES SHOWCASE SECTION -->
-  <main id="accessoriesSection" class="max-w-[1600px] mx-auto px-6 sm:px-12 pt-4 pb-24">
-    
-    <!-- Category Tabs & Item Counter -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-neutral-200 dark:border-neutral-800 mb-8">
-      
-      <!-- Category Tabs -->
-      <div id="categoriesContainer" class="flex flex-wrap items-center gap-2 overflow-x-auto pb-1">
-        <!-- Rendered dynamically -->
+    <!-- Categories & Results Toolbar -->
+    <div class="filter-toolbar">
+      <div id="categoriesContainer" class="categories-wrap"></div>
+      <div class="results-meta">
+        <span id="itemCountDisplay">LOADING ACCESSORIES...</span>
+        <button id="resetFilterBtn" type="button" class="reset-link" onclick="resetCarFilter()">Reset filters</button>
       </div>
-
-      <!-- Item Counter -->
-      <div id="itemCountDisplay" class="text-[11px] uppercase tracking-zara-wide text-neutral-500 dark:text-neutral-400 font-semibold flex-shrink-0">
-        LOADING ACCESSORIES...
-      </div>
-
     </div>
 
-    <!-- Product Grid -->
-    <div 
-      id="accessoriesGrid" 
-      class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-10"
-    >
-      <!-- Rendered dynamically via app.js -->
-    </div>
+    <!-- Product Showcase Grid -->
+    <div id="accessoriesGrid" class="product-grid"></div>
 
+    <!-- Footer -->
+    <footer class="site-footer">
+      <div>
+        <span class="font-racing" style="font-weight:700;color:var(--text-main);font-size:14px;">KOKO ACCESSORIES</span>
+        <span style="display:block;font-size:11px;margin-top:2px;">Engineered automotive interior &amp; exterior accessories.</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:16px;">
+        <a href="#" onclick="window.scrollTo({top: 0, behavior: 'smooth'}); return false;">BACK TO TOP</a>
+        <a href="admin.html">ADMIN PORTAL &rarr;</a>
+      </div>
+    </footer>
   </main>
 
-  <!-- 7. FOOTER -->
-  <footer class="border-t border-neutral-200 dark:border-neutral-800/80 py-12 px-6 sm:px-12 bg-neutral-50 dark:bg-[#08090c] text-neutral-600 dark:text-neutral-400">
-    <div class="max-w-[1600px] mx-auto flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left">
-      <div>
-        <h4 class="font-racing text-xl uppercase font-black text-black dark:text-white mb-1">KOKO ACCESSORIES</h4>
-        <p class="text-[11px] uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
-          Dedicated car accessories catalogue. Engineered specifically for each vehicle chassis.
-        </p>
+  <!-- 3. CHOOSE YOUR CAR MODAL / MOBILE BOTTOM SHEET -->
+  <div id="carSelectorModal" class="modal-overlay" onclick="if(event.target === this) closeCarModal()">
+    <div class="modal-box narrow" onclick="event.stopPropagation()">
+      <div class="sheet-handle"></div>
+      <div class="modal-header">
+        <span class="modal-title font-racing">Choose Your Car Brand</span>
+        <button type="button" class="modal-close" onclick="closeCarModal()">&times;</button>
       </div>
-
-      <div class="flex items-center gap-6 text-[11px] uppercase tracking-zara font-medium">
-        <a href="#accessoriesSection" onclick="window.scrollTo({top: 0, behavior: 'smooth'}); return false;" class="hover:text-black dark:hover:text-white">BACK TO TOP</a>
-        <a href="admin.html" class="hover:text-black dark:hover:text-white font-semibold text-black dark:text-white underline">ADMIN LOGIN (ADD / REMOVE PHOTOS)</a>
+      <div class="modal-body">
+        <div class="search-box" style="width:100%;margin-bottom:14px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text-muted)"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+          <input id="sheetBrandSearch" type="text" class="search-input" placeholder="Find car brand (Audi, Cupra, Mini, BMW...)" oninput="renderCarSelectorModal()" />
+        </div>
+        <span class="step-eyebrow">Available In Stock</span>
+        <div id="stockedBrandsList" class="brand-list-grid"></div>
+        <button id="toggleEmptyBrandsBtn" type="button" class="toggle-empty-btn" onclick="toggleEmptyBrands()"></button>
+        <div id="emptyBrandsWrap" style="display:none;margin-top:12px;">
+          <span class="step-eyebrow">Coming Soon (0 Items Yet)</span>
+          <div id="emptyBrandsList" class="brand-list-grid"></div>
+        </div>
       </div>
     </div>
-  </footer>
+  </div>
 
-  <!-- 8. PRODUCT DETAIL MODAL (No cart, pure photo preview & WhatsApp inquiry) -->
+  <!-- 4. PRODUCT DETAIL MODAL / MOBILE BOTTOM SHEET -->
   <div id="detailModal" class="modal-overlay" onclick="if(event.target === this) closeDetailModal()">
-    <div class="modal-box relative">
-      <button 
-        onclick="closeDetailModal()" 
-        class="absolute top-4 right-4 z-20 bg-white/90 hover:bg-black hover:text-white w-8 h-8 flex items-center justify-center text-xl transition-colors font-light"
-      >
-        &times;
-      </button>
-      <div id="detailContent">
-        <!-- Rendered dynamically by app.js openDetailModal() -->
+    <div class="modal-box" onclick="event.stopPropagation()">
+      <div class="sheet-handle"></div>
+      <div class="modal-header">
+        <span id="modalDetailBrandTitle" class="modal-title font-racing">ACCESSORY DETAILS</span>
+        <button type="button" class="modal-close" onclick="closeDetailModal()">&times;</button>
       </div>
+      <div id="detailContent" class="modal-body"></div>
     </div>
   </div>
 
@@ -255,16 +187,14 @@
   <div id="toastNotice" class="toast-notice">Notice</div>
 
   <!-- FLOATING WHATSAPP CHAT BUTTON -->
-  <a 
+  <a
     href="https://wa.me/201117781675?text=Hello%20KOKO%20ACCESSORIES!%20I%20would%20like%20to%20inquire%20about%20car%20accessories."
     target="_blank"
-    class="fixed bottom-6 right-6 z-40 bg-[#25D366] hover:bg-[#20ba5a] text-white p-3.5 rounded-full shadow-2xl flex items-center gap-2 group transition-all duration-300 hover:scale-105"
+    class="wa-fab"
     title="Chat with KOKO on WhatsApp (01117781675)"
+    aria-label="Chat on WhatsApp"
   >
-    <svg class="w-6 h-6 fill-current" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.888 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-    <span class="max-w-0 overflow-hidden whitespace-nowrap group-hover:max-w-xs transition-all duration-300 text-xs font-semibold uppercase tracking-wider pr-1">
-      WhatsApp KOKO
-    </span>
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.888 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
   </a>
 
   <!-- Scripts -->

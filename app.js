@@ -1,10 +1,8 @@
 /**
- * KOKO ACCESSORIES - STOREFRONT ENGINE
- * Focus: Car Selection -> Filter Accessories for that Car -> View Details.
- * Fully resilient with self-healing catalog recovery.
+ * KOKO ACCESSORIES - RESPONSIVE PC & MOBILE STOREFRONT ENGINE
+ * Features: Smart Cloud Merge, Stocked-First Vehicle Selector, Dynamic Categories, Sold Out Support.
  */
 
-// Safe Catalog Loader
 function getSafeCatalog() {
   let cat = null;
   try {
@@ -15,22 +13,16 @@ function getSafeCatalog() {
     console.error("getCatalogData error:", e);
   }
 
-  if (!cat || typeof cat !== 'object') {
-    cat = {};
-  }
+  if (!cat || typeof cat !== 'object') cat = {};
 
-  const defaultBrands = (typeof DEFAULT_CAR_BRANDS !== 'undefined' && Array.isArray(DEFAULT_CAR_BRANDS)) 
-    ? DEFAULT_CAR_BRANDS : [];
-  const defaultCats = (typeof DEFAULT_CATEGORIES !== 'undefined' && Array.isArray(DEFAULT_CATEGORIES)) 
-    ? DEFAULT_CATEGORIES : [];
-  const defaultProds = (typeof DEFAULT_PRODUCTS !== 'undefined' && Array.isArray(DEFAULT_PRODUCTS)) 
-    ? DEFAULT_PRODUCTS : [];
+  const defaultBrands = (typeof DEFAULT_CAR_BRANDS !== 'undefined' && Array.isArray(DEFAULT_CAR_BRANDS)) ? DEFAULT_CAR_BRANDS : [];
+  const defaultCats = (typeof DEFAULT_CATEGORIES !== 'undefined' && Array.isArray(DEFAULT_CATEGORIES)) ? DEFAULT_CATEGORIES : [];
+  const defaultProds = (typeof DEFAULT_PRODUCTS !== 'undefined' && Array.isArray(DEFAULT_PRODUCTS)) ? DEFAULT_PRODUCTS : [];
 
   let brands = Array.isArray(cat.brands) && cat.brands.length > 0 ? cat.brands : defaultBrands;
   let categories = Array.isArray(cat.categories) && cat.categories.length > 0 ? cat.categories : defaultCats;
   let products = Array.isArray(cat.products) ? cat.products : (Array.isArray(cat) ? cat : defaultProds);
 
-  // If brands doesn't have "all", prepend it
   if (!brands.some(b => b.id === 'all')) {
     brands.unshift({ id: "all", name: "ALL CARS", logo: "ALL" });
   }
@@ -38,42 +30,71 @@ function getSafeCatalog() {
   return { brands, categories, products };
 }
 
-// Application State
+function normCat(val) {
+  return (val || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+function getBrandDisplayName(brandObj, fallbackId) {
+  if (!brandObj) return (fallbackId || 'CUSTOM').toUpperCase();
+  if (brandObj.id === 'audislien' && brandObj.name === 'AUDI S LIEN') return 'AUDI S LINE';
+  return brandObj.name || brandObj.id.toUpperCase();
+}
+
+function matchesBrand(prod, brandId) {
+  if (!prod) return false;
+  if (brandId === 'all') return true;
+  const b = prod.brand;
+  if (brandId === 'audi') return b === 'audi' || b === 'audislien' || b === 'audirs' || b === 'universal';
+  if (brandId === 'audislien') return b === 'audislien' || b === 'audi' || b === 'universal';
+  if (brandId === 'audirs') return b === 'audirs' || b === 'audi' || b === 'universal';
+  return b === brandId || b === 'universal';
+}
+
+function getBrandCount(brandId, products) {
+  if (brandId === 'all') return products.length;
+  return products.filter(p => matchesBrand(p, brandId)).length;
+}
+
 const state = {
   selectedBrand: 'all',
   selectedCategory: 'all',
   searchQuery: '',
+  showEmptyBrands: false,
   catalog: getSafeCatalog()
 };
 
-// DOM Elements Holder
 let el = {};
 
 function initElements() {
   el = {
     carBrandsContainer: document.getElementById('carBrandsContainer'),
+    mobileQuickBrands: document.getElementById('mobileQuickBrands'),
+    mobileActiveCarName: document.getElementById('mobileActiveCarName'),
+    mobileActiveCarCount: document.getElementById('mobileActiveCarCount'),
     categoriesContainer: document.getElementById('categoriesContainer'),
     accessoriesGrid: document.getElementById('accessoriesGrid'),
     itemCountDisplay: document.getElementById('itemCountDisplay'),
+    resetFilterBtn: document.getElementById('resetFilterBtn'),
     activeCarBanner: document.getElementById('activeCarBanner'),
     activeCarTitle: document.getElementById('activeCarTitle'),
     searchInput: document.getElementById('searchInput'),
+    searchInputMobile: document.getElementById('searchInputMobile'),
+    carSelectorModal: document.getElementById('carSelectorModal'),
     detailModal: document.getElementById('detailModal'),
     detailContent: document.getElementById('detailContent'),
+    modalDetailBrandTitle: document.getElementById('modalDetailBrandTitle'),
     toast: document.getElementById('toastNotice')
   };
 }
 
 // ============================================================
-// THEME MANAGEMENT (LIGHT & DARK MODE)
+// THEME MANAGEMENT (EYE-COMFORTABLE DARK & LIGHT MODE)
 // ============================================================
 function initTheme() {
-  let theme = 'dark'; // Default as requested
+  let theme = 'dark';
   try {
     const saved = localStorage.getItem('koko_theme');
-    if (saved === 'light' || saved === 'dark') {
-      theme = saved;
-    }
+    if (saved === 'light' || saved === 'dark') theme = saved;
   } catch (e) {}
   applyTheme(theme);
 }
@@ -92,9 +113,7 @@ function applyTheme(theme) {
     if (icon) icon.textContent = '☀️';
     if (label) label.textContent = 'LIGHT';
   }
-  try {
-    localStorage.setItem('koko_theme', theme);
-  } catch (e) {}
+  try { localStorage.setItem('koko_theme', theme); } catch (e) {}
 }
 
 window.toggleTheme = function() {
@@ -102,42 +121,37 @@ window.toggleTheme = function() {
   applyTheme(isDark ? 'light' : 'dark');
 };
 
-// Init Application
+// ============================================================
+// INITIALIZATION & CLOUDFLARE KV SMART MERGE
+// ============================================================
 async function initApp() {
   try {
     initTheme();
     initElements();
     state.catalog = getSafeCatalog();
-    
+
     renderCarBrands();
     renderCategories();
     renderAccessories();
     setupSearch();
 
-    // Check Cloudflare Cloud Database for real-time catalog updates
     try {
       const cloudRes = await fetch('/api/catalog');
       if (cloudRes.ok) {
         const cloudData = await cloudRes.json();
         if (cloudData && Array.isArray(cloudData.products)) {
-          // Smart merge: Always preserve all built-in catalog items (92 products)
           const defaultItems = (state.catalog && state.catalog.products) ? state.catalog.products : DEFAULT_PRODUCTS;
           const cloudItemsMap = new Map();
           cloudData.products.forEach(p => { if (p && p.id) cloudItemsMap.set(p.id, p); });
 
           const mergedProducts = defaultItems.map(item => {
             const cloudItem = cloudItemsMap.get(item.id);
-            if (cloudItem) {
-              return { ...item, ...cloudItem };
-            }
-            return item;
+            return cloudItem ? { ...item, ...cloudItem } : item;
           });
 
           const defaultIds = new Set(defaultItems.map(i => i.id));
           cloudData.products.forEach(p => {
-            if (p && p.id && !defaultIds.has(p.id)) {
-              mergedProducts.push(p);
-            }
+            if (p && p.id && !defaultIds.has(p.id)) mergedProducts.push(p);
           });
 
           state.catalog = {
@@ -164,102 +178,214 @@ if (document.readyState === 'loading') {
   initApp();
 }
 
-// Render Car Brand Selector Cards
+// ============================================================
+// VEHICLE BRAND SELECTOR (STOCKED FIRST + MODAL FOR ALL 25)
+// ============================================================
 function renderCarBrands() {
-  if (!el.carBrandsContainer) el.carBrandsContainer = document.getElementById('carBrandsContainer');
-  if (!el.carBrandsContainer) return;
-
   const brands = state.catalog.brands || [];
   const products = state.catalog.products || [];
-  
-  el.carBrandsContainer.innerHTML = brands.map(b => {
-    if (!b || !b.id) return '';
-    const isActive = state.selectedBrand === b.id;
-    
-    // Count accessories for this brand
-    let count = 0;
-    if (b.id === 'all') {
-      count = products.length;
-    } else if (b.id === 'audi') {
-      count = products.filter(p => p && (p.brand === 'audi' || p.brand === 'audislien' || p.brand === 'audirs' || p.brand === 'universal')).length;
-    } else if (b.id === 'audislien') {
-      count = products.filter(p => p && (p.brand === 'audislien' || p.brand === 'audi' || p.brand === 'universal')).length;
-    } else if (b.id === 'audirs') {
-      count = products.filter(p => p && (p.brand === 'audirs' || p.brand === 'audi' || p.brand === 'universal')).length;
-    } else {
-      count = products.filter(p => p && (p.brand === b.id || p.brand === 'universal')).length;
-    }
 
-    const countLabel = count === 1 ? '1 ACCESSORY' : `${count} ACCESSORIES`;
+  const activeObj = brands.find(b => b.id === state.selectedBrand);
+  const activeCount = getBrandCount(state.selectedBrand, products);
+  if (el.mobileActiveCarName) el.mobileActiveCarName.textContent = getBrandDisplayName(activeObj, state.selectedBrand);
+  if (el.mobileActiveCarCount) el.mobileActiveCarCount.textContent = activeCount;
 
-    return `
-      <div 
-        class="car-brand-card ${isActive ? 'active' : ''}" 
-        onclick="selectCarBrand('${b.id}')"
-      >
-        <span class="car-brand-name block text-xs mb-1">${b.name || b.id.toUpperCase()}</span>
-        <span class="car-brand-count block">${countLabel}</span>
+  const stocked = brands.filter(b => b && b.id && getBrandCount(b.id, products) > 0);
+  const emptyCount = brands.filter(b => b && b.id && getBrandCount(b.id, products) === 0).length;
+
+  // PC Stocked Brand Cards + "+ More Brands"
+  if (el.carBrandsContainer) {
+    el.carBrandsContainer.innerHTML = stocked.map(b => {
+      const isActive = state.selectedBrand === b.id;
+      const count = getBrandCount(b.id, products);
+      const countLabel = count === 1 ? '1 ACCESSORY' : `${count} ACCESSORIES`;
+      return `
+        <div class="pc-brand-card ${isActive ? 'active' : ''}" onclick="selectCarBrand('${b.id}')">
+          <span class="pc-brand-name">${getBrandDisplayName(b, b.id)}</span>
+          <span class="pc-brand-count">${countLabel}</span>
+        </div>
+      `;
+    }).join('') + (emptyCount > 0 ? `
+      <div class="pc-brand-card more-brands-card" onclick="openCarModal()">
+        <span class="pc-brand-name">+ MORE BRANDS</span>
+        <span class="pc-brand-count">${emptyCount} COMING SOON</span>
       </div>
+    ` : '');
+  }
+
+  // Mobile 1-Line Stocked Quick Brand Pills
+  if (el.mobileQuickBrands) {
+    el.mobileQuickBrands.innerHTML = stocked.map(b => {
+      const isActive = state.selectedBrand === b.id;
+      const count = getBrandCount(b.id, products);
+      const shortName = b.id === 'all' ? 'ALL' : getBrandDisplayName(b, b.id);
+      return `
+        <button type="button" class="brand-pill ${isActive ? 'active' : ''}" onclick="selectCarBrand('${b.id}')">
+          ${shortName}<span class="brand-pill-count">${count}</span>
+        </button>
+      `;
+    }).join('') + `
+      <button type="button" class="brand-pill" onclick="openCarModal()" style="border-style:dashed;">
+        + ALL ${brands.length} CARS
+      </button>
     `;
-  }).join('');
+  }
 }
 
-// Select Car Brand
 window.selectCarBrand = function(brandId) {
   state.selectedBrand = brandId;
+  state.selectedCategory = 'all';
   renderCarBrands();
+  renderCategories();
   renderAccessories();
   updateCarBanner();
-
-  const gridSection = document.getElementById('accessoriesSection');
-  if (gridSection) {
-    gridSection.scrollIntoView({ behavior: 'smooth' });
-  }
 };
 
-// Update Top Filter Banner
 function updateCarBanner() {
-  if (!el.activeCarBanner) el.activeCarBanner = document.getElementById('activeCarBanner');
-  if (!el.activeCarTitle) el.activeCarTitle = document.getElementById('activeCarTitle');
   if (!el.activeCarBanner) return;
-
   if (state.selectedBrand === 'all') {
     el.activeCarBanner.classList.add('hidden');
   } else {
     const brands = state.catalog.brands || [];
     const currentBrand = brands.find(b => b.id === state.selectedBrand);
-    const brandName = currentBrand ? currentBrand.name : state.selectedBrand.toUpperCase();
-    
-    if (el.activeCarTitle) {
-      el.activeCarTitle.textContent = `${brandName}`;
-    }
+    if (el.activeCarTitle) el.activeCarTitle.textContent = getBrandDisplayName(currentBrand, state.selectedBrand);
     el.activeCarBanner.classList.remove('hidden');
   }
 }
 
-// Reset Car Filter to All
 window.resetCarFilter = function() {
-  selectCarBrand('all');
+  state.selectedBrand = 'all';
   state.selectedCategory = 'all';
+  state.searchQuery = '';
+  if (el.searchInput) el.searchInput.value = '';
+  if (el.searchInputMobile) el.searchInputMobile.value = '';
+  renderCarBrands();
   renderCategories();
+  renderAccessories();
+  updateCarBanner();
 };
 
-// Render Category Filter Tabs
+// Choose Your Car Modal / Bottom Sheet
+window.openCarModal = function() {
+  renderCarSelectorModal();
+  if (el.carSelectorModal) {
+    el.carSelectorModal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+  }
+};
+
+window.closeCarModal = function() {
+  if (el.carSelectorModal) {
+    el.carSelectorModal.classList.remove('active');
+    document.body.style.overflow = '';
+  }
+};
+
+window.toggleEmptyBrands = function() {
+  state.showEmptyBrands = !state.showEmptyBrands;
+  renderCarSelectorModal();
+};
+
+window.pickBrandFromModal = function(brandId) {
+  selectCarBrand(brandId);
+  closeCarModal();
+};
+
+window.renderCarSelectorModal = function() {
+  const brands = state.catalog.brands || [];
+  const products = state.catalog.products || [];
+  const searchEl = document.getElementById('sheetBrandSearch');
+  const q = (searchEl ? searchEl.value : '').trim().toLowerCase();
+
+  const filtered = brands.filter(b => {
+    if (!b || !b.id) return false;
+    const dName = getBrandDisplayName(b, b.id).toLowerCase();
+    return !q || dName.includes(q) || b.id.toLowerCase().includes(q);
+  });
+
+  const stocked = filtered.filter(b => getBrandCount(b.id, products) > 0);
+  const empty = filtered.filter(b => getBrandCount(b.id, products) === 0);
+
+  const stockedListEl = document.getElementById('stockedBrandsList');
+  if (stockedListEl) {
+    stockedListEl.innerHTML = stocked.map(b => {
+      const c = getBrandCount(b.id, products);
+      const active = b.id === state.selectedBrand ? 'active' : '';
+      return `
+        <button type="button" class="sheet-brand-btn ${active}" onclick="pickBrandFromModal('${b.id}')">
+          <span class="sheet-brand-name">${getBrandDisplayName(b, b.id)}</span>
+          <span class="sheet-brand-count">${c}</span>
+        </button>
+      `;
+    }).join('') || '<div style="grid-column:1/-1;font-size:12px;color:var(--text-muted);">No matching brands in stock</div>';
+  }
+
+  const toggleBtn = document.getElementById('toggleEmptyBrandsBtn');
+  const emptyWrap = document.getElementById('emptyBrandsWrap');
+  const emptyListEl = document.getElementById('emptyBrandsList');
+  if (toggleBtn && emptyWrap && emptyListEl) {
+    if (empty.length === 0) {
+      toggleBtn.style.display = 'none';
+      emptyWrap.style.display = 'none';
+    } else {
+      toggleBtn.style.display = 'block';
+      toggleBtn.innerHTML = state.showEmptyBrands
+        ? 'Hide Coming Soon Brands &#9652;'
+        : `Show ${empty.length} Other Brands (Coming Soon) &#9662;`;
+      emptyWrap.style.display = (state.showEmptyBrands || q.length > 0) ? 'block' : 'none';
+      emptyListEl.innerHTML = empty.map(b => {
+        const active = b.id === state.selectedBrand ? 'active' : '';
+        return `
+          <button type="button" class="sheet-brand-btn empty ${active}" onclick="pickBrandFromModal('${b.id}')">
+            <span class="sheet-brand-name">${getBrandDisplayName(b, b.id)}</span>
+            <span class="sheet-brand-count">0</span>
+          </button>
+        `;
+      }).join('');
+    }
+  }
+};
+
+// ============================================================
+// FILTERING & DYNAMIC CATEGORIES
+// ============================================================
+function getFilteredProducts(ignoreCategory = false) {
+  const products = state.catalog.products || [];
+  return products.filter(p => {
+    if (!p) return false;
+    if (!matchesBrand(p, state.selectedBrand)) return false;
+
+    if (!ignoreCategory && state.selectedCategory !== 'all') {
+      if (normCat(p.category) !== normCat(state.selectedCategory)) return false;
+    }
+
+    if (state.searchQuery && state.searchQuery.trim() !== '') {
+      const q = state.searchQuery.trim().toLowerCase();
+      const hay = `${p.name || ''} ${p.fitment || ''} ${p.description || ''} ${p.brand || ''} ${p.category || ''}`.toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+
+    return true;
+  });
+}
+
 function renderCategories() {
-  if (!el.categoriesContainer) el.categoriesContainer = document.getElementById('categoriesContainer');
   if (!el.categoriesContainer) return;
-
   const cats = state.catalog.categories || [];
+  const brandMatched = getFilteredProducts(true);
 
-  el.categoriesContainer.innerHTML = cats.map(c => {
-    if (!c || !c.id) return '';
-    const isActive = state.selectedCategory === c.id;
+  const validCats = cats.filter(c => {
+    if (!c || !c.id) return false;
+    if (c.id === 'all') return true;
+    return brandMatched.some(p => normCat(p.category) === normCat(c.id));
+  });
+
+  el.categoriesContainer.innerHTML = validCats.map(c => {
+    const isActive = normCat(state.selectedCategory) === normCat(c.id);
+    const label = c.id === 'all' ? 'ALL' : (c.name || c.id.toUpperCase());
     return `
-      <button 
-        class="category-tab ${isActive ? 'active' : ''}" 
-        onclick="selectCategory('${c.id}')"
-      >
-        ${c.name || c.id.toUpperCase()}
+      <button type="button" class="cat-pill ${isActive ? 'active' : ''}" onclick="selectCategory('${c.id}')">
+        ${label}
       </button>
     `;
   }).join('');
@@ -271,139 +397,79 @@ window.selectCategory = function(catId) {
   renderAccessories();
 };
 
-// Render Accessories Grid
+// ============================================================
+// ACCESSORIES GRID RENDER
+// ============================================================
 function renderAccessories() {
-  if (!el.accessoriesGrid) el.accessoriesGrid = document.getElementById('accessoriesGrid');
-  if (!el.itemCountDisplay) el.itemCountDisplay = document.getElementById('itemCountDisplay');
   if (!el.accessoriesGrid) return;
-
-  const products = state.catalog.products || [];
   const brands = state.catalog.brands || [];
+  const filtered = getFilteredProducts(false);
 
-  const filtered = products.filter(p => {
-    if (!p) return false;
-
-    // 1. Car Brand Filter
-    if (state.selectedBrand !== 'all') {
-      const b = p.brand;
-      const sel = state.selectedBrand;
-      const isAudiFamily = (sel === 'audi' || sel === 'audislien' || sel === 'audirs');
-      const itemIsAudiFamily = (b === 'audi' || b === 'audislien' || b === 'audirs');
-
-      if (sel === 'audi') {
-        if (!itemIsAudiFamily && b !== 'universal') return false;
-      } else if (sel === 'audislien') {
-        if (b !== 'audislien' && b !== 'audi' && b !== 'universal') return false;
-      } else if (sel === 'audirs') {
-        if (b !== 'audirs' && b !== 'audi' && b !== 'universal') return false;
-      } else if (b !== sel && b !== 'universal') {
-        return false;
-      }
-    }
-
-    // 2. Category Filter
-    if (state.selectedCategory !== 'all') {
-      if (p.category !== state.selectedCategory) {
-        return false;
-      }
-    }
-
-    // 3. Search Query
-    if (state.searchQuery && state.searchQuery.trim() !== '') {
-      const q = state.searchQuery.toLowerCase();
-      const matchName = (p.name || '').toLowerCase().includes(q);
-      const matchFit = (p.fitment || '').toLowerCase().includes(q);
-      const matchDesc = (p.description || '').toLowerCase().includes(q);
-      const matchBrand = (p.brand || '').toLowerCase().includes(q);
-      if (!matchName && !matchFit && !matchDesc && !matchBrand) {
-        return false;
-      }
-    }
-
-    return true;
-  });
-
-  // Update item count
   if (el.itemCountDisplay) {
-    el.itemCountDisplay.textContent = `${filtered.length} ACCESSORIES AVAILABLE`;
+    el.itemCountDisplay.innerHTML = `Showing <strong>${filtered.length}</strong> accessories`;
   }
 
-  // Empty state
+  const hasFilter = state.selectedBrand !== 'all' || state.selectedCategory !== 'all' || (state.searchQuery && state.searchQuery.trim() !== '');
+  if (el.resetFilterBtn) {
+    el.resetFilterBtn.classList.toggle('visible', Boolean(hasFilter));
+  }
+
   if (filtered.length === 0) {
     el.accessoriesGrid.innerHTML = `
-      <div class="col-span-full py-20 text-center">
-        <p class="font-editorial text-2xl uppercase tracking-wider text-neutral-400 mb-2">NO ACCESSORIES FOUND</p>
-        <p class="text-xs uppercase tracking-zara text-neutral-500 mb-6">NO ACCESSORIES MATCH THIS SELECTION YET.</p>
-        <div class="flex flex-wrap items-center justify-center gap-3">
-          <button onclick="resetCarFilter()" class="btn-black py-2.5 px-5 text-xs">SHOW ALL ACCESSORIES (${products.length})</button>
-          <a href="admin.html" class="btn-outline py-2.5 px-5 text-xs">+ ADD ACCESSORY IN ADMIN</a>
+      <div style="grid-column:1 / -1;text-align:center;padding:56px 16px;">
+        <p class="font-racing" style="font-size:18px;font-weight:700;color:var(--text-main);margin-bottom:6px;">NO ACCESSORIES FOUND</p>
+        <p style="font-size:12px;color:var(--text-muted);margin-bottom:18px;">Try clearing filters or choosing another vehicle make.</p>
+        <div style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap;">
+          <button type="button" onclick="resetCarFilter()" class="btn-black">SHOW ALL ACCESSORIES (${(state.catalog.products || []).length})</button>
+          <a href="admin.html" class="btn-outline">+ ADD IN ADMIN</a>
         </div>
       </div>
     `;
     return;
   }
 
-  // Render cards
   el.accessoriesGrid.innerHTML = filtered.map(item => {
     const brandObj = brands.find(b => b.id === item.brand);
-    const brandName = brandObj ? brandObj.name : (item.brand ? item.brand.toUpperCase() : 'CUSTOM');
+    const brandName = getBrandDisplayName(brandObj, item.brand);
     const photoUrl = (item.images && item.images.length > 0) ? item.images[0] : (item.image || 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&w=1200&q=80');
     const photoCount = (item.images && item.images.length > 1) ? item.images.length : 1;
     const isSoldOut = Boolean(item.isSoldOut);
 
     return `
-      <div class="accessory-card group ${isSoldOut ? 'opacity-85' : ''}" onclick="openDetailModal('${item.id}')">
-        <div class="accessory-img-box relative">
-          <img 
-            src="${photoUrl}" 
-            alt="${item.name || 'Accessory'}" 
-            class="accessory-img ${isSoldOut ? 'grayscale-[20%] contrast-90' : ''}"
+      <article class="accessory-card ${isSoldOut ? 'sold-out' : ''}" onclick="openDetailModal('${item.id}')">
+        <div class="accessory-img-box">
+          <img
+            src="${photoUrl}"
+            alt="${item.name || 'Accessory'}"
+            class="accessory-img"
             loading="lazy"
             onerror="this.src='https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&w=1200&q=80'"
           />
-          <div class="absolute top-2.5 left-2.5 z-10">
-            <span class="bg-black/90 text-white text-[9px] font-semibold tracking-zara-wide uppercase px-2 py-0.5">
-              ${brandName}
-            </span>
-          </div>
-          ${isSoldOut ? `
-            <div class="absolute top-2.5 right-2.5 z-10">
-              <span class="bg-[#E10600] text-white text-[9px] font-bold tracking-zara-wide uppercase px-2 py-0.5 shadow-sm">
-                SOLD OUT
-              </span>
-            </div>
-          ` : ''}
-          ${photoCount > 1 ? `
-            <div class="absolute bottom-2 right-2 bg-black/80 text-white text-[9px] font-bold px-2 py-0.5 uppercase tracking-wide z-10">
-              ${photoCount} PHOTOS
-            </div>
-          ` : ''}
+          <span class="card-brand-tag">${brandName}</span>
+          ${isSoldOut ? '<span class="card-soldout-tag">SOLD OUT</span>' : ''}
+          ${photoCount > 1 ? `<span class="card-photos-pill">${photoCount} PHOTOS</span>` : ''}
         </div>
 
-        <div class="pt-3 pb-4">
-          <div class="flex items-center justify-between text-[10px] uppercase tracking-zara-wide mb-1">
-            <span class="text-neutral-400">${(item.category || '').toUpperCase()}</span>
-            ${isSoldOut 
-              ? '<span class="text-[#E10600] font-bold tracking-wider">● SOLD OUT</span>' 
-              : '<span class="text-emerald-600 dark:text-emerald-400 font-semibold tracking-wider">● IN STOCK</span>'
-            }
+        <div class="card-body">
+          <div>
+            <h3 class="card-title">${item.name || 'Accessory'}</h3>
+            <p class="card-fit" style="margin-top:4px;">FIT: ${item.fitment || 'All Models'}</p>
           </div>
-          <h3 class="text-xs uppercase font-medium tracking-zara text-black dark:text-white group-hover:text-neutral-500 dark:group-hover:text-neutral-300 transition-colors line-clamp-1 mb-1.5">
-            ${item.name || 'Accessory'}
-          </h3>
-          <p class="text-[11px] text-neutral-600 dark:text-neutral-400 line-clamp-1">
-            <span class="font-semibold text-black dark:text-white">FIT:</span> ${item.fitment || 'All Models'}
-          </p>
-          <div class="mt-2 pt-2 border-t border-neutral-100 dark:border-neutral-800 flex items-center justify-between text-[10px] uppercase tracking-zara-wide text-neutral-900 dark:text-neutral-300 font-semibold group-hover:underline">
-            <span>VIEW PHOTOS &amp; DETAILS &rarr;</span>
+          <div class="card-meta-row">
+            ${isSoldOut
+              ? '<span class="status-sold-out">&#9679; Sold Out</span>'
+              : '<span class="status-in-stock">&#9679; In Stock</span>'}
+            <span class="card-tap-hint">Details &rarr;</span>
           </div>
         </div>
-      </div>
+      </article>
     `;
   }).join('');
 }
 
-// Helper to generate full WhatsApp inquiry URL
+// ============================================================
+// WHATSAPP INQUIRY & MULTI-PHOTO DETAIL MODAL
+// ============================================================
 function getProductWhatsAppUrl(product, allImages) {
   let photoLink = '';
   if (allImages && allImages[0]) {
@@ -424,165 +490,80 @@ function getProductWhatsAppUrl(product, allImages) {
     `*Item:* ${product.name || 'Accessory'}${isSoldOut ? ' [CURRENTLY SOLD OUT]' : ''}`,
     `*Compatibility:* ${product.fitment || 'All Models'}`
   ];
-  if (photoLink) {
-    lines.push(`*Photo Link:* ${photoLink}`);
-  }
+  if (photoLink) lines.push(`*Photo Link:* ${photoLink}`);
 
   return 'https://wa.me/201117781675?text=' + encodeURIComponent(lines.join('\n'));
 }
 
-// Multi-Photo Detail Modal
 window.currentModalImages = [];
 window.currentModalImgIndex = 0;
 
 window.openDetailModal = function(productId) {
   const product = state.catalog.products.find(p => p.id === productId);
-  if (!product) return;
-
-  if (!el.detailModal) el.detailModal = document.getElementById('detailModal');
-  if (!el.detailContent) el.detailContent = document.getElementById('detailContent');
-  if (!el.detailModal || !el.detailContent) return;
+  if (!product || !el.detailModal || !el.detailContent) return;
 
   const brands = state.catalog.brands || [];
   const brandObj = brands.find(b => b.id === product.brand);
-  const brandName = brandObj ? brandObj.name : (product.brand ? product.brand.toUpperCase() : 'CUSTOM');
-  
+  const brandName = getBrandDisplayName(brandObj, product.brand);
+
   const allImages = (product.images && Array.isArray(product.images) && product.images.length > 0)
-    ? product.images 
+    ? product.images
     : [product.image || 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&w=1200&q=80'];
 
   window.currentModalImages = allImages;
   window.currentModalImgIndex = 0;
 
+  if (el.modalDetailBrandTitle) {
+    el.modalDetailBrandTitle.textContent = `${brandName} • ${(product.category || 'ACCESSORY').toUpperCase()}`;
+  }
+
+  const isSoldOut = Boolean(product.isSoldOut);
+
   el.detailContent.innerHTML = `
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-0">
-      <!-- Photo Area -->
-      <div class="relative bg-[#f7f7f7] aspect-square md:aspect-auto min-h-[360px] overflow-hidden flex items-center justify-center p-4 group">
-        <!-- Main Large Photo (Full, uncropped view) -->
-        <img 
-          id="modalMainImg" 
-          src="${allImages[0]}" 
-          alt="${product.name}" 
-          class="w-full h-full max-h-[520px] object-contain transition-opacity duration-300"
-        />
-
-        <!-- Left / Right Navigation Arrows if multiple photos -->
+    <div class="product-modal-split">
+      <div>
+        <div class="modal-gallery">
+          <img id="modalMainImg" src="${allImages[0]}" alt="${product.name}" />
+          ${allImages.length > 1 ? `
+            <button type="button" class="gallery-nav gallery-prev" onclick="prevModalPhoto(event)" title="Previous Photo">&#10094;</button>
+            <button type="button" class="gallery-nav gallery-next" onclick="nextModalPhoto(event)" title="Next Photo">&#10095;</button>
+            <span id="modalPhotoCounter" class="card-brand-tag" style="top:12px;left:12px;">1 / ${allImages.length}</span>
+          ` : ''}
+        </div>
         ${allImages.length > 1 ? `
-          <button 
-            type="button"
-            onclick="prevModalPhoto(event)"
-            class="absolute left-3 top-1/2 -translate-y-1/2 bg-black/70 hover:bg-black text-white w-9 h-9 flex items-center justify-center text-lg transition-colors z-10"
-            title="Previous Photo"
-          >
-            &#10094;
-          </button>
-          <button 
-            type="button"
-            onclick="nextModalPhoto(event)"
-            class="absolute right-3 top-1/2 -translate-y-1/2 bg-black/70 hover:bg-black text-white w-9 h-9 flex items-center justify-center text-lg transition-colors z-10"
-            title="Next Photo"
-          >
-            &#10095;
-          </button>
-
-          <!-- Photo Counter Indicator -->
-          <div class="absolute top-3 left-3 bg-black/85 text-white text-[9px] uppercase font-bold tracking-widest px-2.5 py-1 z-10">
-            <span id="modalPhotoCounter">PHOTO 1 OF ${allImages.length}</span>
-          </div>
-
-          <!-- Bottom Clickable Thumbnails Row -->
-          <div class="absolute bottom-3 left-3 right-3 flex justify-center gap-2 p-1.5 bg-black/60 backdrop-blur-sm z-10 overflow-x-auto">
+          <div class="thumb-strip">
             ${allImages.map((imgUrl, i) => `
-              <button 
-                type="button"
-                onclick="setModalPhotoIndex(${i})"
-                id="modalThumbBtn_${i}"
-                class="w-11 h-11 border ${i === 0 ? 'border-white ring-2 ring-white' : 'border-white/40 opacity-60 hover:opacity-100'} overflow-hidden flex-shrink-0 transition-all bg-neutral-800"
-                title="Photo ${i + 1}"
-              >
-                <img src="${imgUrl}" class="w-full h-full object-cover" />
+              <button type="button" id="modalThumbBtn_${i}" class="thumb-btn ${i === 0 ? 'active' : ''}" onclick="setModalPhotoIndex(${i})">
+                <img src="${imgUrl}" alt="Photo ${i + 1}" />
               </button>
             `).join('')}
           </div>
         ` : ''}
       </div>
 
-      <!-- Detail Info -->
-      <div class="p-8 md:p-10 flex flex-col justify-between bg-white">
-        <div>
-          <div class="flex items-center justify-between text-[11px] tracking-zara-wide text-neutral-400 uppercase mb-2">
-            <span>${brandName}</span>
-            <span class="text-black font-semibold uppercase">${product.category || 'ACCESSORY'}</span>
-          </div>
+      <div class="detail-col">
+        <h2 style="font-size:17px;font-weight:700;line-height:1.3;text-transform:uppercase;color:var(--text-main);">
+          ${product.name}
+        </h2>
 
-          <h2 class="font-editorial text-2xl uppercase tracking-wider text-black mb-4 leading-tight">
-            ${product.name}
-          </h2>
-
-          <!-- Availability Status Banner -->
-          ${product.isSoldOut ? `
-            <div class="mb-5 p-3 bg-red-50 border-l-4 border-[#E10600] flex items-center justify-between">
-              <div class="flex items-center gap-2">
-                <span class="w-2.5 h-2.5 rounded-full bg-[#E10600] animate-pulse"></span>
-                <span class="text-xs font-bold text-[#E10600] uppercase tracking-wider">CURRENTLY SOLD OUT • OUT OF STOCK</span>
-              </div>
-              <span class="text-[10px] text-neutral-500 uppercase tracking-widest font-semibold">RESTOCK SOON</span>
-            </div>
-          ` : `
-            <div class="mb-5 p-2.5 bg-emerald-50 border-l-4 border-emerald-600 flex items-center justify-between">
-              <div class="flex items-center gap-2">
-                <span class="w-2.5 h-2.5 rounded-full bg-emerald-600"></span>
-                <span class="text-xs font-bold text-emerald-800 uppercase tracking-wider">IN STOCK &amp; READY TO SHIP</span>
-              </div>
-              <span class="text-[10px] text-emerald-700 uppercase tracking-widest font-semibold">AVAILABLE NOW</span>
-            </div>
-          `}
-
-          <!-- Compatibility Box -->
-          <div class="p-4 bg-neutral-50 border border-neutral-200 mb-6">
-            <span class="text-[10px] font-bold uppercase tracking-zara-wide text-black block mb-1">
-              GUARANTEED FITMENT / COMPATIBILITY:
-            </span>
-            <p class="text-xs uppercase text-neutral-700 leading-relaxed font-medium">
-              ${product.fitment || 'Compatible with all models'}
-            </p>
-          </div>
-
-          <!-- Description -->
-          <div class="mb-6">
-            <span class="text-[10px] font-bold uppercase tracking-zara-wide text-neutral-400 block mb-1.5">
-              ACCESSORY SPECIFICATIONS:
-            </span>
-            <p class="text-xs text-neutral-700 leading-relaxed uppercase">
-              ${product.description || 'Premium crafted automotive accessory engineered specifically for your vehicle.'}
-            </p>
-          </div>
-
-          ${allImages.length > 1 ? `
-            <div class="text-[10px] uppercase tracking-zara text-neutral-500 mb-4 flex items-center gap-2">
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-              <span>${allImages.length} Photos (Use arrows to switch Front / Back)</span>
-            </div>
-          ` : ''}
+        <div class="status-banner ${isSoldOut ? 'soldout' : 'instock'}">
+          <span>${isSoldOut ? '&#9679; CURRENTLY SOLD OUT • OUT OF STOCK' : '&#9679; IN STOCK & READY TO SHIP'}</span>
+          <span style="font-size:10px;opacity:0.85;">${isSoldOut ? 'RESTOCK SOON' : 'AVAILABLE'}</span>
         </div>
 
-        <!-- Inquire Button -->
-        <div class="space-y-3 pt-6 border-t border-neutral-200">
-          <a 
-            href="${getProductWhatsAppUrl(product, allImages)}"
-            target="_blank"
-            class="${product.isSoldOut ? 'bg-[#b91c1c] hover:bg-[#991b1b]' : 'bg-[#25D366] hover:bg-[#20ba5a]'} text-white w-full py-4 text-xs font-bold text-center flex items-center justify-center gap-2 tracking-zara-wide shadow-md transition-all hover:shadow-lg"
-          >
-            <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.888 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-            <span>${product.isSoldOut ? 'INQUIRE RESTOCK DATE ON WHATSAPP' : 'INQUIRE ON WHATSAPP &bull; ASK PRICE'}</span>
-          </a>
-          <button 
-            onclick="closeDetailModal()"
-            class="btn-outline w-full py-3 text-xs text-center"
-          >
-            CLOSE PREVIEW
-          </button>
+        <div class="fitment-box">
+          <strong>Guaranteed Fitment / Compatibility</strong>
+          <span>${product.fitment || 'Compatible with all models'}</span>
         </div>
+
+        <p style="font-size:12.5px;color:var(--text-sub);line-height:1.55;">
+          ${product.description || 'Premium crafted automotive accessory engineered specifically for your vehicle.'}
+        </p>
+
+        <a href="${getProductWhatsAppUrl(product, allImages)}" target="_blank" class="wa-cta ${isSoldOut ? 'soldout-cta' : ''}">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.888 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+          <span>${isSoldOut ? 'INQUIRE RESTOCK DATE ON WHATSAPP' : 'INQUIRE ON WHATSAPP • ASK PRICE'}</span>
+        </a>
       </div>
     </div>
   `;
@@ -594,66 +575,73 @@ window.openDetailModal = function(productId) {
 window.setModalPhotoIndex = function(idx) {
   if (!window.currentModalImages || !window.currentModalImages[idx]) return;
   window.currentModalImgIndex = idx;
-  
+
   const mainImg = document.getElementById('modalMainImg');
-  if (mainImg) {
-    mainImg.src = window.currentModalImages[idx];
-  }
+  if (mainImg) mainImg.src = window.currentModalImages[idx];
 
   const counter = document.getElementById('modalPhotoCounter');
-  if (counter) {
-    counter.textContent = `PHOTO ${idx + 1} OF ${window.currentModalImages.length}`;
-  }
+  if (counter) counter.textContent = `${idx + 1} / ${window.currentModalImages.length}`;
 
-  // Update active thumbnail borders
   window.currentModalImages.forEach((_, i) => {
     const btn = document.getElementById(`modalThumbBtn_${i}`);
-    if (btn) {
-      if (i === idx) {
-        btn.className = "w-11 h-11 border border-white ring-2 ring-white overflow-hidden flex-shrink-0 transition-all opacity-100 bg-neutral-800";
-      } else {
-        btn.className = "w-11 h-11 border border-white/40 overflow-hidden flex-shrink-0 transition-all opacity-60 hover:opacity-100 bg-neutral-800";
-      }
-    }
+    if (btn) btn.classList.toggle('active', i === idx);
   });
 };
 
 window.nextModalPhoto = function(e) {
   if (e) e.stopPropagation();
   if (!window.currentModalImages || window.currentModalImages.length <= 1) return;
-  let nextIdx = window.currentModalImgIndex + 1;
-  if (nextIdx >= window.currentModalImages.length) nextIdx = 0;
+  const nextIdx = (window.currentModalImgIndex + 1) % window.currentModalImages.length;
   setModalPhotoIndex(nextIdx);
 };
 
 window.prevModalPhoto = function(e) {
   if (e) e.stopPropagation();
   if (!window.currentModalImages || window.currentModalImages.length <= 1) return;
-  let prevIdx = window.currentModalImgIndex - 1;
-  if (prevIdx < 0) prevIdx = window.currentModalImages.length - 1;
+  const prevIdx = (window.currentModalImgIndex - 1 + window.currentModalImages.length) % window.currentModalImages.length;
   setModalPhotoIndex(prevIdx);
 };
 
 window.closeDetailModal = function() {
-  if (!el.detailModal) el.detailModal = document.getElementById('detailModal');
   if (el.detailModal) {
     el.detailModal.classList.remove('active');
     document.body.style.overflow = '';
   }
 };
 
-// Search Setup
+// ============================================================
+// SEARCH & MOBILE SEARCH DRAWER
+// ============================================================
 function setupSearch() {
-  if (!el.searchInput) el.searchInput = document.getElementById('searchInput');
-  if (!el.searchInput) return;
-
-  el.searchInput.addEventListener('input', (e) => {
-    state.searchQuery = e.target.value;
+  const onSearchInput = (val) => {
+    state.searchQuery = val;
+    if (el.searchInput && el.searchInput.value !== val) el.searchInput.value = val;
+    if (el.searchInputMobile && el.searchInputMobile.value !== val) el.searchInputMobile.value = val;
     renderAccessories();
-  });
+  };
+
+  if (el.searchInput) el.searchInput.addEventListener('input', e => onSearchInput(e.target.value));
+  if (el.searchInputMobile) el.searchInputMobile.addEventListener('input', e => onSearchInput(e.target.value));
 }
 
-// Toast
+window.toggleMobileSearch = function() {
+  const drawer = document.getElementById('mobileSearchDrawer');
+  if (!drawer) return;
+  drawer.classList.toggle('open');
+  if (drawer.classList.contains('open') && el.searchInputMobile) {
+    el.searchInputMobile.focus();
+  }
+};
+
+window.clearMobileSearch = function() {
+  state.searchQuery = '';
+  if (el.searchInput) el.searchInput.value = '';
+  if (el.searchInputMobile) el.searchInputMobile.value = '';
+  const drawer = document.getElementById('mobileSearchDrawer');
+  if (drawer) drawer.classList.remove('open');
+  renderAccessories();
+};
+
 function showToast(msg) {
   if (!el.toast) el.toast = document.getElementById('toastNotice');
   if (!el.toast) return;
