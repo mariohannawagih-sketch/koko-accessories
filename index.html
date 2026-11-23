@@ -1,20 +1,28 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" dir="ltr" class="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>KOKO ACCESSORIES — Luxury Car Accessories Showcase</title>
   <meta name="description" content="Select your car to discover tailored accessories for Audi, Cupra, Mini Cooper, Skoda, BMW, Mercedes-Benz, Porsche and more.">
 
-  <!-- Immediate Theme Initialization (defaults to eye-friendly dark mode) -->
+  <!-- Immediate Theme & Language Initialization -->
   <script>
     (function() {
       try {
-        const saved = localStorage.getItem('koko_theme');
-        if (saved === 'light') {
+        var theme = localStorage.getItem('koko_theme');
+        if (theme === 'light') {
           document.documentElement.classList.remove('dark');
         } else {
           document.documentElement.classList.add('dark');
+        }
+        var lang = localStorage.getItem('koko_lang');
+        if (lang === 'ar') {
+          document.documentElement.lang = 'ar';
+          document.documentElement.dir = 'rtl';
+        } else {
+          document.documentElement.lang = 'en';
+          document.documentElement.dir = 'ltr';
         }
       } catch (e) {
         document.documentElement.classList.add('dark');
@@ -22,22 +30,22 @@
     })();
   </script>
 
-  <!-- Google Fonts -->
+  <!-- Google Fonts: Bodoni Moda, Cairo (Arabic), Inter, Space Grotesk -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..900;1,6..96,400..900&family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..900;1,6..96,400..900&family=Cairo:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
 
   <!-- Custom Stylesheet -->
   <link rel="stylesheet" href="styles.css">
 </head>
-<body>
+<body id="top">
 
-  <!-- 1. STICKY RESPONSIVE HEADER -->
+  <!-- 1. STICKY RESPONSIVE HEADER (NO TOP ADMIN BUTTON AS INSTRUCTED) -->
   <header class="site-header">
     <div class="koko-container">
       <div class="header-inner">
         <div class="brand-left">
-          <a href="index.html" class="brand-lockup" onclick="resetCarFilter(); return false;">
+          <a href="#top" class="brand-lockup" onclick="resetCarFilter(); return false;">
             <span class="de-flag-slash" aria-hidden="true">
               <span class="de-black"></span>
               <span class="de-red"></span>
@@ -49,6 +57,13 @@
             </div>
           </a>
         </div>
+
+        <nav class="website-nav-links" aria-label="Website Sections">
+          <a href="#vehicleSection" data-i18n="navCars">Cars</a>
+          <a href="#catalogSection" data-i18n="navCatalog">Accessories</a>
+          <a href="#howToOrder" data-i18n="navHow">How to Order</a>
+          <a href="#siteFooter" data-i18n="navContact">Contact</a>
+        </nav>
 
         <div class="header-right">
           <div class="search-box desktop-search-box">
@@ -64,10 +79,6 @@
             <span id="themeToggleIcon">🌙</span>
             <span id="themeToggleLabel">DARK</span>
           </button>
-
-          <a href="admin.html" class="header-btn desktop-admin-btn" title="Open Admin Dashboard">
-            ADMIN &rarr;
-          </a>
         </div>
       </div>
 
@@ -81,14 +92,57 @@
     </div>
   </header>
 
-  <!-- 2. MAIN CONTENT -->
+  <!-- 2. EDITORIAL WEBSITE HERO SECTION (DYNAMICALLY POPULATED) -->
+  <section id="heroBand" class="hero-band">
+    <div class="koko-container">
+      <div class="hero-grid">
+        <div class="hero-copy">
+          <span class="hero-kicker" data-i18n="heroKicker">KOKO AUTOMOTIVE ATELIER &bull; EGYPT</span>
+          <h1 class="hero-h1" data-i18n="heroTitle">Precision Accessories Tailored for Your Car.</h1>
+          <p class="hero-desc" data-i18n="heroDesc">
+            Browse real multi-angle hardware photos across every stocked vehicle make. Select your car, check stock instantly, and order via WhatsApp &mdash; updated live with the Admin Portal.
+          </p>
+          <div class="hero-cta-row">
+            <a href="#vehicleSection" class="btn-black" data-i18n="heroBtnCar">CHOOSE YOUR CAR</a>
+            <a href="#catalogSection" class="btn-outline" data-i18n="heroBtnBrowse">BROWSE ALL PARTS</a>
+          </div>
+          <div class="hero-stats-line">
+            <span><strong id="heroStatParts" class="tabular">43</strong> <span data-i18n="factParts">Accessories</span></span>
+            <span>&bull;</span>
+            <span><strong id="heroStatBrands" class="tabular">25</strong> <span data-i18n="factBrands">Car Makes Ready</span></span>
+            <span>&bull;</span>
+            <span><strong id="heroStatSync" style="color:var(--stock-green);">LIVE</strong> <span data-i18n="factSync">Cloud Synced</span></span>
+          </div>
+        </div>
+
+        <div id="heroCollage" class="hero-collage" aria-label="Featured vehicle accessories showcase">
+          <button type="button" class="collage-tile collage-main" onclick="openHeroCollageItem(0)" aria-label="Featured accessory photo 1">
+            <img id="heroImg0" src="images/keycovers/audi-s-line-key-front.jpg" alt="Featured automotive accessory" loading="eager" />
+            <span id="heroBadge0" class="collage-badge">AUDI &bull; KEY COVER</span>
+          </button>
+          <div class="collage-stack">
+            <button type="button" class="collage-tile collage-side" onclick="openHeroCollageItem(1)" aria-label="Featured accessory photo 2">
+              <img id="heroImg1" src="images/shifters/cupra-carbon-fiber-paddle-extensions-front.jpg" alt="Featured automotive accessory" loading="lazy" />
+              <span id="heroBadge1" class="collage-badge">CUPRA &bull; SHIFTERS</span>
+            </button>
+            <button type="button" class="collage-tile collage-side" onclick="openHeroCollageItem(2)" aria-label="Featured accessory photo 3">
+              <img id="heroImg2" src="images/badges/cupra-front-grille-emblem-badge-copper-front.jpg" alt="Featured automotive accessory" loading="lazy" />
+              <span id="heroBadge2" class="collage-badge">BADGES</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. MAIN STOREFRONT CONTENT -->
   <main id="accessoriesSection" class="koko-container">
 
     <!-- Step 1: Vehicle Selector (Stocked cards on PC, Choose Bar + Swipe Pills on Mobile) -->
-    <section class="vehicle-section">
+    <section id="vehicleSection" class="vehicle-section">
       <div class="section-top-row">
-        <span class="step-eyebrow">Step 1 &bull; Select Your Vehicle</span>
-        <span style="font-size:11px;color:var(--text-muted);">Showing in-stock brands first &bull; Tap + More Brands for all makes</span>
+        <span class="step-eyebrow" data-i18n="step1Title">Step 1 &bull; Select Your Vehicle</span>
+        <span style="font-size:11px;color:var(--text-muted);" data-i18n="step1Hint">Showing in-stock brands first &bull; Tap + More Brands for all makes</span>
       </div>
 
       <!-- PC Stocked Car Cards Row -->
@@ -97,13 +151,13 @@
       <!-- Mobile Compact Choose Your Car Button -->
       <button type="button" class="mobile-vehicle-trigger" onclick="openCarModal()">
         <div>
-          <span class="car-trigger-label">Step 1 &bull; Your Vehicle</span>
+          <span class="car-trigger-label" data-i18n="step1MobileLabel">Step 1 &bull; Your Vehicle</span>
           <div class="car-trigger-value">
             <span id="mobileActiveCarName" class="font-racing">ALL CARS</span>
             <span id="mobileActiveCarCount" class="car-count-chip">0</span>
           </div>
         </div>
-        <span class="change-pill">CHOOSE CAR &#9662;</span>
+        <span class="change-pill" data-i18n="changeCarBtn">CHOOSE CAR &#9662;</span>
       </button>
 
       <!-- Mobile Quick Stocked Brand Swipe Row -->
@@ -114,45 +168,94 @@
     <div id="activeCarBanner" class="active-car-banner hidden">
       <div style="display:flex;align-items:center;gap:8px;min-width:0;">
         <span style="width:8px;height:8px;border-radius:99px;background:var(--de-red);flex-shrink:0;"></span>
-        <span style="color:var(--text-sub);text-transform:uppercase;font-size:10.5px;">Showing accessories for:</span>
+        <span style="color:var(--text-sub);text-transform:uppercase;font-size:10.5px;" data-i18n="showingFor">Showing accessories for:</span>
         <strong id="activeCarTitle" style="color:var(--de-gold);text-transform:uppercase;font-size:12px;">ALL CARS</strong>
       </div>
-      <button type="button" onclick="resetCarFilter()" style="background:none;border:none;color:var(--text-main);font-size:11px;font-weight:700;text-decoration:underline;cursor:pointer;white-space:nowrap;">
+      <button type="button" onclick="resetCarFilter()" style="background:none;border:none;color:var(--text-main);font-size:11px;font-weight:700;text-decoration:underline;cursor:pointer;white-space:nowrap;" data-i18n="showAllBtn">
         SHOW ALL &times;
       </button>
     </div>
 
     <!-- Categories & Results Toolbar -->
-    <div class="filter-toolbar">
-      <div id="categoriesContainer" class="categories-wrap"></div>
-      <div class="results-meta">
-        <span id="itemCountDisplay">LOADING ACCESSORIES...</span>
-        <button id="resetFilterBtn" type="button" class="reset-link" onclick="resetCarFilter()">Reset filters</button>
+    <section id="catalogSection">
+      <div class="filter-toolbar">
+        <div id="categoriesContainer" class="categories-wrap"></div>
+        <div class="results-meta">
+          <button type="button" id="stockFilterBtn" class="stock-filter-btn" onclick="toggleStockFilter()" data-i18n="inStockOnly">IN STOCK ONLY</button>
+          <span id="itemCountDisplay">LOADING ACCESSORIES...</span>
+          <button id="resetFilterBtn" type="button" class="reset-link" onclick="resetCarFilter()">Reset filters</button>
+        </div>
       </div>
-    </div>
 
-    <!-- Product Showcase Grid -->
-    <div id="accessoriesGrid" class="product-grid"></div>
+      <!-- Product Showcase Grid -->
+      <div id="accessoriesGrid" class="product-grid"></div>
+    </section>
 
-    <!-- Footer -->
-    <footer class="site-footer">
-      <div>
-        <span class="font-racing" style="font-weight:700;color:var(--text-main);font-size:14px;">KOKO ACCESSORIES</span>
-        <span style="display:block;font-size:11px;margin-top:2px;">Engineered automotive interior &amp; exterior accessories.</span>
+    <!-- 4. HOW TO ORDER 3-STEP GUIDE -->
+    <section id="howToOrder" class="steps-band">
+      <div class="koko-container" style="padding-inline:0;">
+        <span class="hero-kicker" data-i18n="howKicker">FAST ORDERING</span>
+        <h2 class="hero-h1" style="font-size:clamp(22px, 2.5vw, 32px);margin-top:4px;" data-i18n="howTitle">How to Order in 3 Simple Steps</h2>
+        <div class="steps-grid">
+          <div class="step-card">
+            <span class="step-num">01</span>
+            <h3 data-i18n="stepCard1Title">Select Your Car &amp; Category</h3>
+            <p data-i18n="stepCard1Desc">Pick your vehicle brand to filter all compatible accessories, or inspect any item's front &amp; back studio photos.</p>
+          </div>
+          <div class="step-card">
+            <span class="step-num">02</span>
+            <h3 data-i18n="stepCard2Title">Confirm Fitment via WhatsApp</h3>
+            <p data-i18n="stepCard2Desc">Click Order on WhatsApp from any accessory page &mdash; it pre-fills the exact item name so we confirm model &amp; year immediately.</p>
+          </div>
+          <div class="step-card">
+            <span class="step-num">03</span>
+            <h3 data-i18n="stepCard3Title">Fast Doorstep Delivery</h3>
+            <p data-i18n="stepCard3Desc">Delivery across Cairo &amp; all Egyptian governorates with flexible payment on delivery or Instapay.</p>
+          </div>
+        </div>
       </div>
-      <div style="display:flex;align-items:center;gap:16px;">
-        <a href="#" onclick="window.scrollTo({top: 0, behavior: 'smooth'}); return false;">BACK TO TOP</a>
-        <a href="admin.html">ADMIN PORTAL &rarr;</a>
+    </section>
+
+    <!-- 5. REAL DYNAMIC WEBSITE FOOTER (ADMIN PORTAL ONLY AT THE VERY BOTTOM) -->
+    <footer id="siteFooter" class="site-footer">
+      <div class="footer-grid">
+        <div class="footer-col">
+          <h4 class="font-racing">KOKO ACCESSORIES</h4>
+          <p data-i18n="footerAbout">Automotive badges, smart key shells, floor mats &amp; cockpit styling accessories across Egypt. Everything syncs live with your Admin Portal.</p>
+        </div>
+        <div class="footer-col">
+          <h4 data-i18n="footerCars">Popular Car Brands</h4>
+          <ul id="footerBrandsList" class="footer-links"></ul>
+        </div>
+        <div class="footer-col">
+          <h4 data-i18n="footerContact">Direct Support</h4>
+          <ul class="footer-links">
+            <li><a href="https://wa.me/201117781675" target="_blank" rel="noopener">WhatsApp: +20 111 778 1675</a></li>
+            <li><a href="#top" data-i18n="backToTop">Back to Top &uarr;</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+          <span data-i18n="footerNote">&copy; KOKO ACCESSORIES &bull; Precision Automotive Atelier</span>
+          <a href="admin.html" class="admin-footer-link" data-i18n="adminPortalLink">Admin Portal &rarr;</a>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span data-i18n="footerLangLabel">Language:</span>
+          <button type="button" id="footerEnBtn" class="header-btn" onclick="setLanguage('en')">English</button>
+          <button type="button" id="footerArBtn" class="header-btn" onclick="setLanguage('ar')">العربية</button>
+        </div>
       </div>
     </footer>
   </main>
 
-  <!-- 3. CHOOSE YOUR CAR MODAL / MOBILE BOTTOM SHEET -->
+  <!-- 6. CHOOSE YOUR CAR MODAL / MOBILE BOTTOM SHEET -->
   <div id="carSelectorModal" class="modal-overlay" onclick="if(event.target === this) closeCarModal()">
     <div class="modal-box narrow" onclick="event.stopPropagation()">
       <div class="sheet-handle"></div>
       <div class="modal-header">
-        <span class="modal-title font-racing">Choose Your Car Brand</span>
+        <span class="modal-title font-racing" data-i18n="modalCarTitle">Choose Your Car Brand</span>
         <button type="button" class="modal-close" onclick="closeCarModal()">&times;</button>
       </div>
       <div class="modal-body">
@@ -160,18 +263,18 @@
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text-muted)"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
           <input id="sheetBrandSearch" type="text" class="search-input" placeholder="Find car brand (Audi, Cupra, Mini, BMW...)" oninput="renderCarSelectorModal()" />
         </div>
-        <span class="step-eyebrow">Available In Stock</span>
+        <span class="step-eyebrow" data-i18n="availableInStock">Available In Stock</span>
         <div id="stockedBrandsList" class="brand-list-grid"></div>
         <button id="toggleEmptyBrandsBtn" type="button" class="toggle-empty-btn" onclick="toggleEmptyBrands()"></button>
         <div id="emptyBrandsWrap" style="display:none;margin-top:12px;">
-          <span class="step-eyebrow">Coming Soon (0 Items Yet)</span>
+          <span class="step-eyebrow" data-i18n="comingSoon">Coming Soon</span>
           <div id="emptyBrandsList" class="brand-list-grid"></div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- 4. PRODUCT DETAIL MODAL / MOBILE BOTTOM SHEET -->
+  <!-- 7. PRODUCT DETAIL MODAL / MOBILE BOTTOM SHEET -->
   <div id="detailModal" class="modal-overlay" onclick="if(event.target === this) closeDetailModal()">
     <div class="modal-box" onclick="event.stopPropagation()">
       <div class="sheet-handle"></div>
@@ -186,8 +289,14 @@
   <!-- TOAST -->
   <div id="toastNotice" class="toast-notice">Notice</div>
 
-  <!-- FLOATING WHATSAPP CHAT BUTTON -->
+  <!-- FLOATING BOTTOM LANGUAGE SWITCHER (LEFT ON LTR, RIGHT ON RTL) -->
+  <button type="button" id="bottomLangBtn" class="bottom-lang-btn" onclick="toggleLanguage()" aria-label="Change Language">
+    🌐 العربية
+  </button>
+
+  <!-- FLOATING WHATSAPP CHAT BUTTON (RIGHT ON LTR, LEFT ON RTL) -->
   <a
+    id="waFab"
     href="https://wa.me/201117781675?text=Hello%20KOKO%20ACCESSORIES!%20I%20would%20like%20to%20inquire%20about%20car%20accessories."
     target="_blank"
     class="wa-fab"
