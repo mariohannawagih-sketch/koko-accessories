@@ -413,6 +413,7 @@ const PHRASE_DICT_AR = [
   ['kit', 'طقم'],
   ['pack', 'عبوة'],
   ['tag', 'شعار'],
+  ['vrs', 'vRS'],
   ['owners & enthusiasts', 'وملاك السيارة'],
   ['with', 'مع'],
   ['for', 'لـ']
@@ -876,8 +877,478 @@ const PRODUCT_AR_MAP = {
   }
 };
 
+const PRODUCT_EN_MAP = {
+  'vwr-mwu83fbi': {
+    arName: 'حرف R للشبكه و شنطه',
+    nameEn: 'VWR R FRONT GRILLE & TRUNK LETTER EMBLEM',
+    fitmentEn: 'Volkswagen R Front Grille & Rear Trunk'
+  }
+};
+
 function hasArabic(str) {
   return /[\u0600-\u06FF]/.test(str || '');
+}
+
+function normalizeArabicForMatch(str) {
+  return String(str || '')
+    .replace(/[\u064B-\u065F\u0670\u0640]/g, '')
+    .replace(/[أإآٱ]/g, 'ا')
+    .replace(/ة/g, 'ه')
+    .replace(/ى/g, 'ي')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+// Multi-word normalized Arabic -> English phrases (longest first)
+const AR_PHRASE_DICT_EN = [
+  ['اكسسوارات السيارات', 'Car Accessories'],
+  ['اكسسوارات السيارة', 'Car Accessories'],
+  ['دواسات ارضيه مطاط', 'All-Weather Rubber Floor Mats'],
+  ['دواسات ارضيه', 'Floor Mats'],
+  ['دواسات مطاط', 'Rubber Floor Mats'],
+  ['طقم دواسات سبورت', 'Sports Pedals Set'],
+  ['دواسات سبورت', 'Sports Pedals'],
+  ['طقم دواسات', 'Pedals Set'],
+  ['شيفتات طاره', 'Paddle Shifters'],
+  ['تطويله شيفتات', 'Paddle Shifter Extensions'],
+  ['كفر طاره دركسيون', 'Steering Wheel Cover'],
+  ['كفر طاره', 'Steering Wheel Cover'],
+  ['كفر دركسيون', 'Steering Wheel Cover'],
+  ['طاره الدركسيون', 'Steering Wheel'],
+  ['جراب مفتاح سمارت', 'Smart Key Fob Cover'],
+  ['كفر مفتاح سمارت', 'Smart Key Fob Shell'],
+  ['جراب مفتاح', 'Key Fob Cover'],
+  ['كفر مفتاح', 'Key Fob Shell'],
+  ['ميداليه مفاتيح', 'Keychain'],
+  ['ميداليه مراه', 'Rearview Mirror Ornament'],
+  ['كفر كاليبر فرامل', 'Brake Caliper Cover'],
+  ['كفرات كاليبر فرامل', 'Brake Caliper Covers'],
+  ['كفرات كاليبر', 'Brake Caliper Covers'],
+  ['كفر كاليبر', 'Brake Caliper Cover'],
+  ['سنتر كاب جنوط', 'Wheel Center Hub Caps'],
+  ['اغطيه جنوط', 'Wheel Center Caps'],
+  ['اغطيه بلف الكاوتش', 'Tire Valve Stem Caps'],
+  ['بلوف كاوتش', 'Tire Valve Caps'],
+  ['حزام امان', 'Seatbelt'],
+  ['احزمه امان', 'Seatbelts'],
+  ['كاتم صوت حزام الامان', 'Seatbelt Buckle Alarm Silencer'],
+  ['كاتم حزام', 'Seatbelt Silencer'],
+  ['قفل حزام', 'Seatbelt Buckle Clip'],
+  ['حمايه مقابض الابواب', 'Door Handle Anti-Scratch Guards'],
+  ['عتب حمايه ابواب', 'Door Sill Protectors'],
+  ['عتب ابواب', 'Door Sill Guards'],
+  ['عتب حمايه', 'Door Sill Protectors'],
+  ['جون كوبر وركس', 'John Cooper Works (JCW)'],
+  ['انتينا سقف رياضيه', 'Short Sport Roof Antenna'],
+  ['انتينا سقف', 'Roof Antenna'],
+  ['اريال سقف', 'Roof Antenna'],
+  ['مساحات زجاج', 'Windshield Wipers'],
+  ['كاربون فايبر اصلي', 'Real Carbon Fiber'],
+  ['كاربون فايبر لامع', 'Gloss Carbon Fiber'],
+  ['كاربون فايبر', 'Carbon Fiber'],
+  ['كربون فايبر', 'Carbon Fiber'],
+  ['المونيوم مصقول', 'Brushed Aluminum'],
+  ['المنيوم مصقول', 'Brushed Aluminum'],
+  ['ستانلس ستيل', 'Stainless Steel'],
+  ['جلد مطرز', 'Embroidered Leather'],
+  ['اسود لامع بالكامل', 'Gloss Blackout'],
+  ['اسود لامع', 'Gloss Black'],
+  ['اسود مطفي', 'Matte Black'],
+  ['اسود مط', 'Matte Black'],
+  ['فضي مطفي', 'Matte Silver'],
+  ['احمر قرمزي', 'Crimson Red'],
+  ['احمر رياضي', 'Racing Red'],
+  ['معدن صلب', 'Solid Metal'],
+  ['شبكه اماميه وشنطه', 'Front Grille & Trunk'],
+  ['شبكه و شنطه', 'Grille & Trunk'],
+  ['شنطه و شبكه', 'Trunk & Grille'],
+  ['للشبكه و شنطه', 'Front Grille & Trunk'],
+  ['للشبكه والشنطه', 'Front Grille & Trunk'],
+  ['شبكه اماميه', 'Front Grille'],
+  ['شنطه خلفيه', 'Rear Trunk'],
+  ['باب الشنطه', 'Trunk Lid'],
+  ['شعار شبكه', 'Grille Emblem'],
+  ['شعار شنطه', 'Trunk Emblem'],
+  ['علامه شنطه', 'Trunk Emblem'],
+  ['حروف شنطه', 'Trunk Lettering'],
+  ['جميع الموديلات', 'All Models'],
+  ['كل الموديلات', 'All Models'],
+  ['كل السيارات', 'All Cars'],
+  ['جميع السيارات', 'All Cars'],
+  ['جميع الاجيال', 'All Generations'],
+  ['الموديلات المتوافقه', 'Compatible Models'],
+  ['طقم 4 قطع', 'Set of 4'],
+  ['طقم 5 قطع', '5-Piece Set'],
+  ['زوج قطعتين', 'Pair'],
+  ['فولكس فاجن', 'Volkswagen'],
+  ['فولكس واجن', 'Volkswagen'],
+  ['ميني كوبر', 'Mini Cooper'],
+  ['بي ام دبليو', 'BMW'],
+  ['مرسيدس بنز', 'Mercedes-Benz'],
+  ['لاند روفر', 'Land Rover'],
+  ['الفا روميو', 'Alfa Romeo'],
+  ['بي واي دي', 'BYD'],
+  ['ام جي', 'MG']
+];
+
+// Normalized single Arabic stems -> English words
+const AR_WORD_DICT_EN = {
+  'و': '&',
+  'في': 'In',
+  'علي': 'On',
+  'مع': 'With',
+  'من': 'From',
+  'ل': 'For',
+  'بدون': 'Without',
+  'حرف': 'Letter',
+  'حروف': 'Letters',
+  'كلمه': 'Word',
+  'شعار': 'Emblem',
+  'شعارات': 'Emblems',
+  'علامه': 'Emblem',
+  'علامات': 'Emblems',
+  'لوجو': 'Logo',
+  'تاج': 'Badge',
+  'تاجات': 'Badges',
+  'بادج': 'Badge',
+  'شاره': 'Badge',
+  'شارات': 'Badges',
+  'شبكه': 'Grille',
+  'شبك': 'Grille',
+  'شنطه': 'Trunk',
+  'كبوت': 'Hood',
+  'سقف': 'Roof',
+  'باب': 'Door',
+  'ابواب': 'Doors',
+  'رفرف': 'Fender',
+  'رفارف': 'Fenders',
+  'مراه': 'Mirror',
+  'مرايا': 'Mirrors',
+  'مقبض': 'Handle',
+  'مقابض': 'Handles',
+  'تابلوه': 'Dashboard',
+  'صالون': 'Interior',
+  'مقصوره': 'Cockpit',
+  'مفتاح': 'Key',
+  'مفاتيح': 'Keys',
+  'ريموت': 'Remote',
+  'سمارت': 'Smart',
+  'جراب': 'Cover',
+  'جرابات': 'Covers',
+  'كفر': 'Cover',
+  'كفرات': 'Covers',
+  'غطاء': 'Cover',
+  'اغطيه': 'Covers',
+  'غلاف': 'Shell',
+  'حامي': 'Protector',
+  'حمايه': 'Protection',
+  'ميداليه': 'Keychain',
+  'ميداليات': 'Keychains',
+  'سلسله': 'Keyring',
+  'دواسه': 'Pedal',
+  'دواسات': 'Floor Mats',
+  'فرش': 'Mats',
+  'سجاد': 'Mats',
+  'مطاط': 'Rubber',
+  'شيفتات': 'Paddle Shifters',
+  'بدالات': 'Pedals',
+  'تطويله': 'Extension',
+  'طاره': 'Steering Wheel',
+  'دركسيون': 'Steering Wheel',
+  'كاليبر': 'Caliper',
+  'فرامل': 'Brake',
+  'جنط': 'Wheel Rim',
+  'جنوط': 'Alloy Wheels',
+  'كاوتش': 'Tire',
+  'عجل': 'Wheels',
+  'بلف': 'Valve Cap',
+  'بلوف': 'Valve Caps',
+  'سبويلر': 'Spoiler',
+  'جناح': 'Spoiler',
+  'ديفوزر': 'Diffuser',
+  'شكمان': 'Exhaust',
+  'اكزوست': 'Exhaust',
+  'مخارج': 'Tips',
+  'مساحات': 'Wipers',
+  'زجاج': 'Glass',
+  'انتينا': 'Antenna',
+  'اريال': 'Antenna',
+  'حزام': 'Seatbelt',
+  'احزمه': 'Seatbelts',
+  'امان': 'Safety',
+  'مشبك': 'Clip',
+  'مشابك': 'Clips',
+  'قفل': 'Buckle',
+  'كاتم': 'Silencer',
+  'صوت': 'Alarm',
+  'عتب': 'Sill Guard',
+  'اكصدام': 'Bumper',
+  'فانوس': 'Headlight',
+  'فوانيس': 'Lights',
+  'اضاءه': 'Lighting',
+  'محيطيه': 'Ambient',
+  'استيكر': 'Sticker',
+  'استيكرات': 'Decal Pack',
+  'كارت': 'Card',
+  'انتظار': 'Parking',
+  'محفور': 'Engraved',
+  'مجسم': 'Model',
+  'تزيين': 'Trim',
+  'اطار': 'Frame',
+  'حلقه': 'Ring',
+  'امامي': 'Front',
+  'اماميه': 'Front',
+  'خلفي': 'Rear',
+  'خلفيه': 'Rear',
+  'جانبي': 'Side',
+  'داخلي': 'Interior',
+  'داخليه': 'Interior',
+  'خارجي': 'Exterior',
+  'يمين': 'Right',
+  'شمال': 'Left',
+  'فوق': 'Upper',
+  'اسفل': 'Lower',
+  'كامل': 'Complete',
+  'اصلي': 'OEM',
+  'اوريجينال': 'OEM',
+  'فاخر': 'Luxury',
+  'فاخره': 'Luxury',
+  'سبورت': 'Sport',
+  'رياضي': 'Sport',
+  'رياضيه': 'Sport',
+  'موتورسبورت': 'Motorsport',
+  'سباقات': 'Racing',
+  'كاربون': 'Carbon',
+  'كربون': 'Carbon',
+  'فايبر': 'Fiber',
+  'معدن': 'Metal',
+  'معدني': 'Metallic',
+  'صلب': 'Solid',
+  'المونيوم': 'Aluminum',
+  'المنيوم': 'Aluminum',
+  'الومنيوم': 'Aluminum',
+  'مصقول': 'Brushed',
+  'ستانلس': 'Stainless',
+  'ستيل': 'Steel',
+  'جلد': 'Leather',
+  'مطرز': 'Embroidered',
+  'قطيفه': 'Suede',
+  'الكانتارا': 'Alcantara',
+  'سيليكون': 'Silicone',
+  'بلاستيك': 'ABS Plastic',
+  'كروم': 'Chrome',
+  'نيكل': 'Chrome',
+  'اسود': 'Black',
+  'سمراء': 'Black',
+  'احمر': 'Red',
+  'حمراء': 'Red',
+  'ابيض': 'White',
+  'فضي': 'Silver',
+  'سلفر': 'Silver',
+  'رمادي': 'Grey',
+  'جراي': 'Grey',
+  'ذهبي': 'Gold',
+  'برونزي': 'Bronze',
+  'نحاسي': 'Copper',
+  'ازرق': 'Blue',
+  'كحلي': 'Navy',
+  'سماوي': 'Cyan',
+  'تركواز': 'Teal',
+  'اخضر': 'Green',
+  'اصفر': 'Yellow',
+  'برتقالي': 'Orange',
+  'لامع': 'Gloss',
+  'لميع': 'Gloss',
+  'مطفي': 'Matte',
+  'مط': 'Matte',
+  'معتم': 'Blackout',
+  'ثلاثي': '3D',
+  'الوان': 'Multi-Color',
+  'طقم': 'Set',
+  'زوج': 'Pair',
+  'قطعه': 'Piece',
+  'قطع': 'Pieces',
+  'عبوه': 'Pack',
+  'حبه': 'Piece',
+  'توب': 'Top',
+  'اكسسوار': 'Accessory',
+  'اكسسوارات': 'Accessories',
+  'اكسسورات': 'Accessories',
+  'متوفر': 'Available',
+  'مناسب': 'Fits',
+  'يناسب': 'Fits',
+  'توافق': 'Fitment',
+  'متوافق': 'Compatible',
+  'جميع': 'All',
+  'كل': 'All',
+  'موديل': 'Model',
+  'موديلات': 'Models',
+  'فئه': 'Edition',
+  'اصدار': 'Edition',
+  'خاص': 'Special',
+  'محدود': 'Limited',
+  'عام': 'Universal',
+  'سياره': 'Car',
+  'سيارات': 'Cars',
+  'عربيه': 'Car',
+  'عربيات': 'Cars',
+  'اوتوماتيك': 'Automatic',
+  'مانيوال': 'Manual',
+  'اودي': 'Audi',
+  'كوبرا': 'Cupra',
+  'سكودا': 'Skoda',
+  'سيات': 'Seat',
+  'ميني': 'Mini',
+  'فولكس': 'VW',
+  'فاجن': 'Volkswagen',
+  'مرسيدس': 'Mercedes',
+  'بنز': 'Benz',
+  'بورشه': 'Porsche',
+  'بورش': 'Porsche',
+  'اوبل': 'Opel',
+  'بيجو': 'Peugeot',
+  'ستروين': 'Citroen',
+  'سيتروين': 'Citroen',
+  'رينو': 'Renault',
+  'كيا': 'Kia',
+  'هيونداي': 'Hyundai',
+  'نيسان': 'Nissan',
+  'تويوتا': 'Toyota',
+  'هوندا': 'Honda',
+  'سوبارو': 'Subaru',
+  'لانسر': 'Lancer',
+  'ميتسوبيشي': 'Mitsubishi',
+  'ابارث': 'Abarth',
+  'فيات': 'Fiat',
+  'دودج': 'Dodge',
+  'فورد': 'Ford',
+  'جيب': 'Jeep',
+  'شيفروليه': 'Chevrolet',
+  'شيري': 'Chery',
+  'جيتور': 'Jetour',
+  'جيلي': 'Geely',
+  'شانجان': 'Changan',
+  'هافال': 'Haval',
+  'سوزوكي': 'Suzuki',
+  'اوكتافيا': 'Octavia',
+  'سوبرب': 'Superb',
+  'كودياك': 'Kodiaq',
+  'كاروك': 'Karoq',
+  'فورمينتور': 'Formentor',
+  'ليون': 'Leon',
+  'اتيكا': 'Ateca',
+  'تيجوان': 'Tiguan',
+  'جولف': 'Golf',
+  'باسات': 'Passat'
+};
+
+const AR_TRANSLIT_MAP = {
+  'ا': 'a', 'أ': 'a', 'إ': 'i', 'آ': 'a', 'ٱ': 'a', 'ب': 'b', 'ت': 't', 'ث': 'th',
+  'ج': 'g', 'ح': 'h', 'خ': 'kh', 'د': 'd', 'ذ': 'dh', 'ر': 'r', 'ز': 'z', 'س': 's',
+  'ش': 'sh', 'ص': 's', 'ض': 'd', 'ط': 't', 'ظ': 'z', 'ع': 'a', 'غ': 'gh', 'ف': 'f',
+  'ق': 'q', 'ك': 'k', 'ل': 'l', 'م': 'm', 'ن': 'n', 'ه': 'h', 'ة': 'a', 'و': 'w',
+  'ي': 'y', 'ى': 'y', 'ئ': 'y', 'ؤ': 'w', 'ء': '', 'ـ': ''
+};
+
+function transliterateArabicWord(word) {
+  let res = '';
+  for (const ch of String(word || '')) {
+    if (ch in AR_TRANSLIT_MAP) {
+      res += AR_TRANSLIT_MAP[ch];
+    } else if (/[\u0660-\u0669]/.test(ch)) {
+      res += String(ch.charCodeAt(0) - 0x0660);
+    }
+  }
+  return res || 'Item';
+}
+
+function translateSingleArabicToken(tok) {
+  if (tok in AR_WORD_DICT_EN) return AR_WORD_DICT_EN[tok];
+  if (tok.startsWith('وال') && tok.length >= 5) {
+    const stem = tok.slice(3);
+    if (stem in AR_WORD_DICT_EN) return `& ${AR_WORD_DICT_EN[stem]}`;
+  }
+  if (tok.startsWith('لل') && tok.length >= 4) {
+    const stem = tok.slice(2);
+    if (stem in AR_WORD_DICT_EN) return `For ${AR_WORD_DICT_EN[stem]}`;
+  }
+  if (tok.startsWith('بال') && tok.length >= 5) {
+    const stem = tok.slice(3);
+    if (stem in AR_WORD_DICT_EN) return AR_WORD_DICT_EN[stem];
+  }
+  if (tok.startsWith('ال') && tok.length >= 4) {
+    const stem = tok.slice(2);
+    if (stem in AR_WORD_DICT_EN) return AR_WORD_DICT_EN[stem];
+  }
+  if (tok.startsWith('و') && tok.length >= 4) {
+    const stem = tok.slice(1);
+    if (stem in AR_WORD_DICT_EN) return `& ${AR_WORD_DICT_EN[stem]}`;
+  }
+  if (tok.startsWith('ل') && tok.length >= 4) {
+    const stem = tok.slice(1);
+    if (stem in AR_WORD_DICT_EN) return `For ${AR_WORD_DICT_EN[stem]}`;
+  }
+  if (tok.startsWith('ب') && tok.length >= 4) {
+    const stem = tok.slice(1);
+    if (stem in AR_WORD_DICT_EN) return AR_WORD_DICT_EN[stem];
+  }
+  if (tok.endsWith('ات') && tok.length >= 5) {
+    const sing = tok.slice(0, -2);
+    if (sing in AR_WORD_DICT_EN) return `${AR_WORD_DICT_EN[sing]}s`;
+    const singHe = sing + 'ه';
+    if (singHe in AR_WORD_DICT_EN) return `${AR_WORD_DICT_EN[singHe]}s`;
+  }
+  return transliterateArabicWord(tok);
+}
+
+const PRESERVE_ACRONYMS = new Set([
+  'VWR', 'VW', 'GTI', 'RS', 'S3', 'RS3', 'RS4', 'RS5', 'RS6', 'RS7',
+  'A3', 'A4', 'A5', 'A6', 'A7', 'A8', 'S4', 'S5', 'S6', 'S7', 'S8',
+  'Q2', 'Q3', 'Q5', 'Q7', 'SQ5', 'JCW', 'OEM', 'ABS', 'TPU', 'DSG',
+  'BMW', 'MG', 'BYD', 'AMG', 'BBS', 'CNC', 'TFSI', 'TTRS', 'TT', 'TTS', 'R', 'S'
+]);
+
+function autoTranslateTextEn(text, opts = {}) {
+  const raw = String(text || '').trim();
+  if (!raw) return '';
+  if (!hasArabic(raw)) {
+    return opts.uppercase ? raw.toUpperCase() : raw;
+  }
+
+  let out = normalizeArabicForMatch(raw);
+
+  // Replace longest-first multi-word Arabic phrases safely
+  for (const [arPhrase, enPhrase] of AR_PHRASE_DICT_EN) {
+    const re = new RegExp(`(^|[^\\u0600-\\u06FF])${arPhrase}(?=[^\\u0600-\\u06FF]|$)`, 'g');
+    out = out.replace(re, (_, prefix) => `${prefix}${enPhrase}`);
+  }
+
+  // Translate any remaining Arabic script tokens word-by-word
+  out = out.replace(/[\u0600-\u06FF]+/g, tok => translateSingleArabicToken(tok));
+
+  // Normalize connectors & whitespace
+  out = out
+    .replace(/([A-Za-z0-9)])([A-Za-z0-9])/g, '$1$2')
+    .replace(/\s*&\s*(&\s*)+/g, ' & ')
+    .replace(/\bFor\s+&\s+/gi, '& ')
+    .replace(/^&\s+|\s+&$/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  if (opts.uppercase) {
+    return out.toUpperCase();
+  }
+
+  return out.split(' ').map(word => {
+    const up = word.toUpperCase();
+    if (up === 'VRS') return 'vRS';
+    if (PRESERVE_ACRONYMS.has(up)) return up;
+    if (word === '&' || word === '/' || word === '-') return word;
+    if (/^[A-Za-z]/.test(word)) {
+      return word.charAt(0).toUpperCase() + word.slice(1);
+    }
+    return word;
+  }).join(' ');
 }
 
 function autoTranslateTextAr(text) {
@@ -913,7 +1384,10 @@ function getBrandDisplayName(brandObj, fallbackId) {
 function getBrandLabel(brandObj, fallbackId) {
   const id = (brandObj && brandObj.id) || fallbackId || 'other';
   const en = getBrandDisplayName(brandObj, fallbackId);
-  if (state.lang !== 'ar') return en;
+  if (state.lang !== 'ar') {
+    if (brandObj && brandObj.nameEn) return brandObj.nameEn;
+    return hasArabic(en) ? autoTranslateTextEn(en, { uppercase: true }) : en;
+  }
   if (brandObj && brandObj.nameAr) return brandObj.nameAr;
   if (hasArabic(en)) return en;
   const normKey = id.toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -922,7 +1396,10 @@ function getBrandLabel(brandObj, fallbackId) {
 
 function getCatLabel(catObj) {
   if (!catObj) return '';
-  if (state.lang !== 'ar') return catObj.name;
+  if (state.lang !== 'ar') {
+    if (catObj.nameEn) return catObj.nameEn;
+    return hasArabic(catObj.name) ? autoTranslateTextEn(catObj.name, { uppercase: true }) : catObj.name;
+  }
   if (catObj.nameAr) return catObj.nameAr;
   if (hasArabic(catObj.name)) return catObj.name;
   const normKey = normCat(catObj.id || catObj.name);
@@ -930,7 +1407,18 @@ function getCatLabel(catObj) {
 }
 
 function getProdTitle(item) {
-  if (state.lang !== 'ar') return item.name;
+  if (!item) return '';
+  if (state.lang !== 'ar') {
+    if (item.nameEn) return item.nameEn;
+    if (hasArabic(item.name)) {
+      const mapped = PRODUCT_EN_MAP[item.id];
+      if (mapped && normalizeArabicForMatch(item.name) === normalizeArabicForMatch(mapped.arName)) {
+        return mapped.nameEn;
+      }
+      return autoTranslateTextEn(item.name, { uppercase: true });
+    }
+    return (item.name || '').toUpperCase();
+  }
   if (item.nameAr) return item.nameAr;
   if (hasArabic(item.name)) return item.name;
   const mapped = PRODUCT_AR_MAP[item.id];
@@ -941,7 +1429,18 @@ function getProdTitle(item) {
 }
 
 function getProdFit(item) {
-  if (state.lang !== 'ar') return item.fitment || '';
+  if (!item) return '';
+  if (state.lang !== 'ar') {
+    if (item.fitmentEn) return item.fitmentEn;
+    if (hasArabic(item.fitment)) {
+      const mapped = PRODUCT_EN_MAP[item.id];
+      if (mapped && mapped.fitmentEn && normalizeArabicForMatch(item.name) === normalizeArabicForMatch(mapped.arName)) {
+        return mapped.fitmentEn;
+      }
+      return autoTranslateTextEn(item.fitment);
+    }
+    return item.fitment || '';
+  }
   if (item.fitmentAr) return item.fitmentAr;
   if (hasArabic(item.fitment)) return item.fitment;
   const mapped = PRODUCT_AR_MAP[item.id];
@@ -1696,8 +2195,8 @@ window.openDetailModal = function(prodId) {
       : `مرحباً كوكو إكسسوارات! أود طلب: ${title} (${brandLabel}) لسيارتي. برجاء تأكيد التوافق وسعر الشحن.`;
   } else {
     waMsg = isSoldOut
-      ? `Hello KOKO ACCESSORIES! I want to inquire about when this item will be back in stock: ${item.name} (${brandLabel}).`
-      : `Hello KOKO ACCESSORIES! I would like to order: ${item.name} (${brandLabel}). Please confirm model compatibility and shipping.`;
+      ? `Hello KOKO ACCESSORIES! I want to inquire about when this item will be back in stock: ${title} (${brandLabel}).`
+      : `Hello KOKO ACCESSORIES! I would like to order: ${title} (${brandLabel}). Please confirm model compatibility and shipping.`;
   }
   const waUrl = `https://wa.me/201117781675?text=${encodeURIComponent(waMsg)}`;
 

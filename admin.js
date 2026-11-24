@@ -678,9 +678,9 @@ function renderAdminAccessoriesTable() {
                 ${item.images && item.images.length > 1 ? `<span class="amc-photo-badge">${item.images.length}</span>` : ''}
               </div>
             </td>
-            <td style="font-weight:600;max-width:260px;text-transform:uppercase;">${item.name}</td>
+            <td dir="auto" style="font-weight:600;max-width:260px;text-transform:uppercase;">${item.name}</td>
             <td style="font-weight:700;color:var(--de-gold);text-transform:uppercase;">${brandName}</td>
-            <td style="color:var(--text-sub);max-width:240px;">${item.fitment || '-'}</td>
+            <td dir="auto" style="color:var(--text-sub);max-width:240px;">${item.fitment || '-'}</td>
             <td style="color:var(--text-muted);text-transform:uppercase;font-size:11px;">${item.category || '-'}</td>
             <td style="text-align:center;">
               <button type="button" onclick="toggleSoldOutStatus('${item.id}')" class="status-pill-btn ${isOut ? 'soldout' : 'instock'}" title="Click to toggle Sold Out">
@@ -725,8 +725,8 @@ function renderAdminAccessoriesTable() {
                   <span class="amc-tag">${brandName}</span>
                   <span class="amc-cat">${item.category || 'ACCESSORY'}</span>
                 </div>
-                <div class="amc-title">${item.name}</div>
-                <div class="amc-fit">FIT: ${item.fitment || 'All Models'}</div>
+                <div class="amc-title" dir="auto">${item.name}</div>
+                <div class="amc-fit">FIT: <span dir="auto">${item.fitment || 'All Models'}</span></div>
               </div>
             </div>
             <div class="amc-actions">
