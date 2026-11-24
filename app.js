@@ -24,19 +24,53 @@ function getSafeCatalog() {
 
   if (!cat || typeof cat !== 'object') cat = {};
 
+  let deletedIds = [];
+  let deletedBrands = [];
+  let deletedCats = [];
+  try {
+    deletedIds = JSON.parse(localStorage.getItem('koko_catalog_deleted_ids') || '[]');
+  } catch (e) {}
+  try {
+    deletedBrands = JSON.parse(localStorage.getItem('koko_catalog_deleted_brands') || '[]');
+  } catch (e) {}
+  try {
+    deletedCats = JSON.parse(localStorage.getItem('koko_catalog_deleted_cats') || '[]');
+  } catch (e) {}
+
+  if (Array.isArray(cat.deletedProductIds)) {
+    deletedIds = Array.from(new Set([...deletedIds, ...cat.deletedProductIds]));
+  }
+  if (Array.isArray(cat.deletedBrandIds)) {
+    deletedBrands = Array.from(new Set([...deletedBrands, ...cat.deletedBrandIds]));
+  }
+  if (Array.isArray(cat.deletedCategoryIds)) {
+    deletedCats = Array.from(new Set([...deletedCats, ...cat.deletedCategoryIds]));
+  }
+
   const defaultBrands = (typeof DEFAULT_CAR_BRANDS !== 'undefined' && Array.isArray(DEFAULT_CAR_BRANDS)) ? DEFAULT_CAR_BRANDS : [];
   const defaultCats = (typeof DEFAULT_CATEGORIES !== 'undefined' && Array.isArray(DEFAULT_CATEGORIES)) ? DEFAULT_CATEGORIES : [];
   const defaultProds = (typeof DEFAULT_PRODUCTS !== 'undefined' && Array.isArray(DEFAULT_PRODUCTS)) ? DEFAULT_PRODUCTS : [];
 
-  let brands = Array.isArray(cat.brands) && cat.brands.length > 0 ? cat.brands : defaultBrands;
-  let categories = Array.isArray(cat.categories) && cat.categories.length > 0 ? cat.categories : defaultCats;
-  let products = Array.isArray(cat.products) ? cat.products : (Array.isArray(cat) ? cat : defaultProds);
+  let rawBrands = Array.isArray(cat.brands) && cat.brands.length > 0 ? cat.brands : defaultBrands;
+  let rawCats = Array.isArray(cat.categories) && cat.categories.length > 0 ? cat.categories : defaultCats;
+  let rawProds = Array.isArray(cat.products) ? cat.products : (Array.isArray(cat) ? cat : defaultProds);
+
+  let brands = rawBrands.filter(b => b && b.id && !deletedBrands.includes(b.id));
+  let categories = rawCats.filter(c => c && c.id && !deletedCats.includes(c.id));
+  let products = rawProds.filter(p => p && p.id && !deletedIds.includes(p.id));
 
   if (!brands.some(b => b.id === 'all')) {
     brands.unshift({ id: "all", name: "ALL CARS", logo: "ALL" });
   }
 
-  return { brands, categories, products };
+  return {
+    brands,
+    categories,
+    products,
+    deletedProductIds: deletedIds,
+    deletedBrandIds: deletedBrands,
+    deletedCategoryIds: deletedCats
+  };
 }
 
 function normCat(val) {
@@ -519,28 +553,56 @@ async function initApp() {
       const cloudRes = await fetch('/api/catalog');
       if (cloudRes.ok) {
         const cloudData = await cloudRes.json();
-        if (cloudData && Array.isArray(cloudData.products)) {
-          const defaultItems = (typeof DEFAULT_PRODUCTS !== 'undefined' && Array.isArray(DEFAULT_PRODUCTS)) ? DEFAULT_PRODUCTS : [];
-          const cloudItemsMap = new Map();
-          cloudData.products.forEach(p => { if (p && p.id) cloudItemsMap.set(p.id, p); });
+        if (cloudData && Array.isArray(cloudData.products) && cloudData.status !== "fallback") {
+          let deletedIds = Array.isArray(state.catalog.deletedProductIds) ? [...state.catalog.deletedProductIds] : [];
+          if (Array.isArray(cloudData.deletedProductIds)) {
+            deletedIds = Array.from(new Set([...deletedIds, ...cloudData.deletedProductIds]));
+          }
+          try {
+            const loc = JSON.parse(localStorage.getItem('koko_catalog_deleted_ids') || '[]');
+            deletedIds = Array.from(new Set([...deletedIds, ...loc]));
+          } catch (e) {}
 
-          const mergedProducts = defaultItems.map(item => {
-            const cloudItem = cloudItemsMap.get(item.id);
-            return cloudItem ? { ...item, ...cloudItem } : item;
-          });
+          let deletedBrandIds = Array.isArray(state.catalog.deletedBrandIds) ? [...state.catalog.deletedBrandIds] : [];
+          if (Array.isArray(cloudData.deletedBrandIds)) {
+            deletedBrandIds = Array.from(new Set([...deletedBrandIds, ...cloudData.deletedBrandIds]));
+          }
+          try {
+            const loc = JSON.parse(localStorage.getItem('koko_catalog_deleted_brands') || '[]');
+            deletedBrandIds = Array.from(new Set([...deletedBrandIds, ...loc]));
+          } catch (e) {}
 
-          const defaultIds = new Set(defaultItems.map(i => i.id));
-          cloudData.products.forEach(p => {
-            if (p && p.id && !defaultIds.has(p.id)) mergedProducts.push(p);
-          });
+          let deletedCatIds = Array.isArray(state.catalog.deletedCategoryIds) ? [...state.catalog.deletedCategoryIds] : [];
+          if (Array.isArray(cloudData.deletedCategoryIds)) {
+            deletedCatIds = Array.from(new Set([...deletedCatIds, ...cloudData.deletedCategoryIds]));
+          }
+          try {
+            const loc = JSON.parse(localStorage.getItem('koko_catalog_deleted_cats') || '[]');
+            deletedCatIds = Array.from(new Set([...deletedCatIds, ...loc]));
+          } catch (e) {}
+
+          const liveProducts = cloudData.products.filter(p => p && p.id && !deletedIds.includes(p.id));
 
           const defaultBrands = (typeof DEFAULT_CAR_BRANDS !== 'undefined' && Array.isArray(DEFAULT_CAR_BRANDS)) ? DEFAULT_CAR_BRANDS : [];
+          let liveBrands = (Array.isArray(cloudData.brands) && cloudData.brands.length > 0)
+            ? cloudData.brands.filter(b => b && b.id && !deletedBrandIds.includes(b.id))
+            : defaultBrands.filter(b => !deletedBrandIds.includes(b.id));
+          if (!liveBrands.some(b => b.id === 'all')) {
+            liveBrands.unshift({ id: "all", name: "ALL CARS", logo: "ALL" });
+          }
+
           const defaultCats = (typeof DEFAULT_CATEGORIES !== 'undefined' && Array.isArray(DEFAULT_CATEGORIES)) ? DEFAULT_CATEGORIES : [];
+          let liveCats = (Array.isArray(cloudData.categories) && cloudData.categories.length > 0)
+            ? cloudData.categories.filter(c => c && c.id && !deletedCatIds.includes(c.id))
+            : defaultCats.filter(c => !deletedCatIds.includes(c.id));
 
           state.catalog = {
-            brands: (cloudData.brands && cloudData.brands.length >= defaultBrands.length) ? cloudData.brands : defaultBrands,
-            categories: (cloudData.categories && cloudData.categories.length > 0) ? cloudData.categories : defaultCats,
-            products: mergedProducts
+            brands: liveBrands,
+            categories: liveCats,
+            products: liveProducts,
+            deletedProductIds: deletedIds,
+            deletedBrandIds: deletedBrandIds,
+            deletedCategoryIds: deletedCatIds
           };
 
           if (typeof saveCatalogData === 'function') {
@@ -565,10 +627,10 @@ async function initApp() {
 // Cross-tab synchronization when Admin adds/updates products
 function setupStorageListener() {
   window.addEventListener('storage', (e) => {
-    if (e.key === 'koko_catalog_data' || e.key === 'koko_theme' || e.key === 'koko_lang') {
+    if (e.key === 'koko_catalog_data' || e.key === 'koko_theme' || e.key === 'koko_lang' || e.key === 'koko_catalog_deleted_ids') {
       if (e.key === 'koko_theme') initTheme();
       if (e.key === 'koko_lang' && e.newValue) applyLanguage(e.newValue);
-      if (e.key === 'koko_catalog_data') {
+      if (e.key === 'koko_catalog_data' || e.key === 'koko_catalog_deleted_ids') {
         state.catalog = getSafeCatalog();
         renderHeroStats();
         renderCarBrands();

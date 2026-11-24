@@ -15,19 +15,53 @@ function getSafeCatalog() {
 
   if (!cat || typeof cat !== 'object') cat = {};
 
+  let deletedIds = [];
+  let deletedBrands = [];
+  let deletedCats = [];
+  try {
+    deletedIds = JSON.parse(localStorage.getItem('koko_catalog_deleted_ids') || '[]');
+  } catch (e) {}
+  try {
+    deletedBrands = JSON.parse(localStorage.getItem('koko_catalog_deleted_brands') || '[]');
+  } catch (e) {}
+  try {
+    deletedCats = JSON.parse(localStorage.getItem('koko_catalog_deleted_cats') || '[]');
+  } catch (e) {}
+
+  if (Array.isArray(cat.deletedProductIds)) {
+    deletedIds = Array.from(new Set([...deletedIds, ...cat.deletedProductIds]));
+  }
+  if (Array.isArray(cat.deletedBrandIds)) {
+    deletedBrands = Array.from(new Set([...deletedBrands, ...cat.deletedBrandIds]));
+  }
+  if (Array.isArray(cat.deletedCategoryIds)) {
+    deletedCats = Array.from(new Set([...deletedCats, ...cat.deletedCategoryIds]));
+  }
+
   const defaultBrands = (typeof DEFAULT_CAR_BRANDS !== 'undefined' && Array.isArray(DEFAULT_CAR_BRANDS)) ? DEFAULT_CAR_BRANDS : [];
   const defaultCats = (typeof DEFAULT_CATEGORIES !== 'undefined' && Array.isArray(DEFAULT_CATEGORIES)) ? DEFAULT_CATEGORIES : [];
   const defaultProds = (typeof DEFAULT_PRODUCTS !== 'undefined' && Array.isArray(DEFAULT_PRODUCTS)) ? DEFAULT_PRODUCTS : [];
 
-  let brands = Array.isArray(cat.brands) && cat.brands.length > 0 ? cat.brands : defaultBrands;
-  let categories = Array.isArray(cat.categories) && cat.categories.length > 0 ? cat.categories : defaultCats;
-  let products = Array.isArray(cat.products) ? cat.products : (Array.isArray(cat) ? cat : defaultProds);
+  let rawBrands = Array.isArray(cat.brands) && cat.brands.length > 0 ? cat.brands : defaultBrands;
+  let rawCats = Array.isArray(cat.categories) && cat.categories.length > 0 ? cat.categories : defaultCats;
+  let rawProds = Array.isArray(cat.products) ? cat.products : (Array.isArray(cat) ? cat : defaultProds);
+
+  let brands = rawBrands.filter(b => b && b.id && !deletedBrands.includes(b.id));
+  let categories = rawCats.filter(c => c && c.id && !deletedCats.includes(c.id));
+  let products = rawProds.filter(p => p && p.id && !deletedIds.includes(p.id));
 
   if (!brands.some(b => b.id === 'all')) {
     brands.unshift({ id: "all", name: "ALL CARS", logo: "ALL" });
   }
 
-  return { brands, categories, products };
+  return {
+    brands,
+    categories,
+    products,
+    deletedProductIds: deletedIds,
+    deletedBrandIds: deletedBrands,
+    deletedCategoryIds: deletedCats
+  };
 }
 
 function normCat(val) {
@@ -183,32 +217,63 @@ async function checkDiskSyncConnection() {
             const catRes = await fetch('/api/catalog');
             if (catRes.ok) {
               const catData = await catRes.json();
-              if (catData && Array.isArray(catData.products)) {
-                const defaultItems = (adminState.catalog && adminState.catalog.products) ? adminState.catalog.products : DEFAULT_PRODUCTS;
-                const cloudItemsMap = new Map();
-                catData.products.forEach(p => { if (p && p.id) cloudItemsMap.set(p.id, p); });
+              if (catData && Array.isArray(catData.products) && catData.status !== "fallback") {
+                let deletedIds = Array.isArray(adminState.catalog.deletedProductIds) ? [...adminState.catalog.deletedProductIds] : [];
+                if (Array.isArray(catData.deletedProductIds)) {
+                  deletedIds = Array.from(new Set([...deletedIds, ...catData.deletedProductIds]));
+                }
+                try {
+                  const loc = JSON.parse(localStorage.getItem('koko_catalog_deleted_ids') || '[]');
+                  deletedIds = Array.from(new Set([...deletedIds, ...loc]));
+                } catch (e) {}
 
-                const mergedProducts = defaultItems.map(item => {
-                  const cloudItem = cloudItemsMap.get(item.id);
-                  return cloudItem ? { ...item, ...cloudItem } : item;
-                });
+                let deletedBrandIds = Array.isArray(adminState.catalog.deletedBrandIds) ? [...adminState.catalog.deletedBrandIds] : [];
+                if (Array.isArray(catData.deletedBrandIds)) {
+                  deletedBrandIds = Array.from(new Set([...deletedBrandIds, ...catData.deletedBrandIds]));
+                }
+                try {
+                  const loc = JSON.parse(localStorage.getItem('koko_catalog_deleted_brands') || '[]');
+                  deletedBrandIds = Array.from(new Set([...deletedBrandIds, ...loc]));
+                } catch (e) {}
 
-                const defaultIds = new Set(defaultItems.map(i => i.id));
-                catData.products.forEach(p => {
-                  if (p && p.id && !defaultIds.has(p.id)) mergedProducts.push(p);
-                });
+                let deletedCatIds = Array.isArray(adminState.catalog.deletedCategoryIds) ? [...adminState.catalog.deletedCategoryIds] : [];
+                if (Array.isArray(catData.deletedCategoryIds)) {
+                  deletedCatIds = Array.from(new Set([...deletedCatIds, ...catData.deletedCategoryIds]));
+                }
+                try {
+                  const loc = JSON.parse(localStorage.getItem('koko_catalog_deleted_cats') || '[]');
+                  deletedCatIds = Array.from(new Set([...deletedCatIds, ...loc]));
+                } catch (e) {}
+
+                const liveProducts = catData.products.filter(p => p && p.id && !deletedIds.includes(p.id));
+
+                const defaultBrands = (typeof DEFAULT_CAR_BRANDS !== 'undefined' && Array.isArray(DEFAULT_CAR_BRANDS)) ? DEFAULT_CAR_BRANDS : [];
+                let liveBrands = (Array.isArray(catData.brands) && catData.brands.length > 0)
+                  ? catData.brands.filter(b => b && b.id && !deletedBrandIds.includes(b.id))
+                  : defaultBrands.filter(b => !deletedBrandIds.includes(b.id));
+                if (!liveBrands.some(b => b.id === 'all')) {
+                  liveBrands.unshift({ id: "all", name: "ALL CARS", logo: "ALL" });
+                }
+
+                const defaultCats = (typeof DEFAULT_CATEGORIES !== 'undefined' && Array.isArray(DEFAULT_CATEGORIES)) ? DEFAULT_CATEGORIES : [];
+                let liveCats = (Array.isArray(catData.categories) && catData.categories.length > 0)
+                  ? catData.categories.filter(c => c && c.id && !deletedCatIds.includes(c.id))
+                  : defaultCats.filter(c => !deletedCatIds.includes(c.id));
 
                 adminState.catalog = {
-                  brands: (catData.brands && catData.brands.length >= DEFAULT_CAR_BRANDS.length) ? catData.brands : DEFAULT_CAR_BRANDS,
-                  categories: (catData.categories && catData.categories.length > 0) ? catData.categories : DEFAULT_CATEGORIES,
-                  products: mergedProducts
+                  brands: liveBrands,
+                  categories: liveCats,
+                  products: liveProducts,
+                  deletedProductIds: deletedIds,
+                  deletedBrandIds: deletedBrandIds,
+                  deletedCategoryIds: deletedCatIds
                 };
                 saveCatalogData(adminState.catalog);
-                syncToDisk(adminState.catalog);
                 renderAdminAccessoriesTable();
                 renderAdminCategories();
                 renderAdminBrands();
                 populateSalesFormOptions();
+                updateAdminCounters();
               }
             }
           } catch (eCat) {}
@@ -733,6 +798,7 @@ window.handleSaveAccessory = async function(e) {
   const primaryPhoto = adminState.activePhotos[0];
   const allPhotos = [...adminState.activePhotos];
 
+  let savedProdId = null;
   if (adminState.editingAccessoryId) {
     const item = adminState.catalog.products.find(p => p.id === adminState.editingAccessoryId);
     if (item) {
@@ -744,6 +810,7 @@ window.handleSaveAccessory = async function(e) {
       item.isSoldOut = isSoldOut;
       item.image = primaryPhoto;
       item.images = allPhotos;
+      savedProdId = item.id;
     }
   } else {
     const newId = `${brand}-${Date.now().toString(36)}`;
@@ -755,10 +822,24 @@ window.handleSaveAccessory = async function(e) {
       image: primaryPhoto,
       images: allPhotos
     });
+    savedProdId = newId;
+  }
+
+  // Untombstone if previously deleted
+  if (savedProdId) {
+    if (Array.isArray(adminState.catalog.deletedProductIds)) {
+      adminState.catalog.deletedProductIds = adminState.catalog.deletedProductIds.filter(x => x !== savedProdId);
+    }
+    try {
+      const curDel = JSON.parse(localStorage.getItem('koko_catalog_deleted_ids') || '[]');
+      const filteredDel = curDel.filter(x => x !== savedProdId);
+      localStorage.setItem('koko_catalog_deleted_ids', JSON.stringify(filteredDel));
+    } catch (e) {}
   }
 
   const cloudSynced = await syncToDisk(adminState.catalog);
   renderAdminAccessoriesTable();
+  updateAdminCounters();
   closeAccessoryModal();
   showToast(cloudSynced ? "✓ SAVED & PUBLISHED LIVE!" : `✓ SAVED ${allPhotos.length} PHOTO(S)!`);
 };
@@ -769,9 +850,24 @@ window.handleDeleteAccessory = async function(id) {
 
   if (confirm(`Delete "${item.name}"?`)) {
     adminState.catalog.products = adminState.catalog.products.filter(p => p.id !== id);
+    if (!Array.isArray(adminState.catalog.deletedProductIds)) {
+      adminState.catalog.deletedProductIds = [];
+    }
+    if (!adminState.catalog.deletedProductIds.includes(id)) {
+      adminState.catalog.deletedProductIds.push(id);
+    }
+    try {
+      const cur = JSON.parse(localStorage.getItem('koko_catalog_deleted_ids') || '[]');
+      if (!cur.includes(id)) {
+        cur.push(id);
+        localStorage.setItem('koko_catalog_deleted_ids', JSON.stringify(cur));
+      }
+    } catch (e) {}
+
     const cloudSynced = await syncToDisk(adminState.catalog);
     renderAdminAccessoriesTable();
-    showToast(cloudSynced ? "✓ Deleted & synced to cloud" : "Deleted from catalog");
+    updateAdminCounters();
+    showToast(cloudSynced ? "✓ Deleted & Saved to Cloud" : "✓ Deleted locally");
   }
 };
 
@@ -806,6 +902,16 @@ window.handleAddNewCategory = async function() {
     return;
   }
 
+  // Untombstone if previously deleted
+  if (Array.isArray(adminState.catalog.deletedCategoryIds)) {
+    adminState.catalog.deletedCategoryIds = adminState.catalog.deletedCategoryIds.filter(x => x !== id);
+  }
+  try {
+    const curDel = JSON.parse(localStorage.getItem('koko_catalog_deleted_cats') || '[]');
+    const filteredDel = curDel.filter(x => x !== id);
+    localStorage.setItem('koko_catalog_deleted_cats', JSON.stringify(filteredDel));
+  } catch (e) {}
+
   adminState.catalog.categories.push({ id, name: name.toUpperCase() });
   await syncToDisk(adminState.catalog);
   adminEl.newCategoryInput.value = '';
@@ -817,6 +923,20 @@ window.handleAddNewCategory = async function() {
 window.handleDeleteCategory = async function(catId) {
   if (confirm("Remove this category?")) {
     adminState.catalog.categories = adminState.catalog.categories.filter(c => c.id !== catId);
+    if (!Array.isArray(adminState.catalog.deletedCategoryIds)) {
+      adminState.catalog.deletedCategoryIds = [];
+    }
+    if (!adminState.catalog.deletedCategoryIds.includes(catId)) {
+      adminState.catalog.deletedCategoryIds.push(catId);
+    }
+    try {
+      const cur = JSON.parse(localStorage.getItem('koko_catalog_deleted_cats') || '[]');
+      if (!cur.includes(catId)) {
+        cur.push(catId);
+        localStorage.setItem('koko_catalog_deleted_cats', JSON.stringify(cur));
+      }
+    } catch (e) {}
+
     await syncToDisk(adminState.catalog);
     renderAdminCategories();
     updateAdminCounters();
@@ -852,6 +972,16 @@ window.handleAddNewBrand = async function() {
     return;
   }
 
+  // Untombstone if previously deleted
+  if (Array.isArray(adminState.catalog.deletedBrandIds)) {
+    adminState.catalog.deletedBrandIds = adminState.catalog.deletedBrandIds.filter(x => x !== id);
+  }
+  try {
+    const curDel = JSON.parse(localStorage.getItem('koko_catalog_deleted_brands') || '[]');
+    const filteredDel = curDel.filter(x => x !== id);
+    localStorage.setItem('koko_catalog_deleted_brands', JSON.stringify(filteredDel));
+  } catch (e) {}
+
   adminState.catalog.brands.push({ id, name: name.toUpperCase(), logo: name.toUpperCase() });
   await syncToDisk(adminState.catalog);
   adminEl.newBrandInput.value = '';
@@ -865,6 +995,20 @@ window.handleAddNewBrand = async function() {
 window.handleDeleteBrand = async function(brandId) {
   if (confirm("Remove this car brand?")) {
     adminState.catalog.brands = adminState.catalog.brands.filter(b => b.id !== brandId);
+    if (!Array.isArray(adminState.catalog.deletedBrandIds)) {
+      adminState.catalog.deletedBrandIds = [];
+    }
+    if (!adminState.catalog.deletedBrandIds.includes(brandId)) {
+      adminState.catalog.deletedBrandIds.push(brandId);
+    }
+    try {
+      const cur = JSON.parse(localStorage.getItem('koko_catalog_deleted_brands') || '[]');
+      if (!cur.includes(brandId)) {
+        cur.push(brandId);
+        localStorage.setItem('koko_catalog_deleted_brands', JSON.stringify(cur));
+      }
+    } catch (e) {}
+
     await syncToDisk(adminState.catalog);
     renderAdminBrands();
     populateBrandFilterDropdown();
@@ -924,12 +1068,26 @@ function saveCatalogData(data) {
 window.handleResetToDefaultData = async function() {
   if (confirm("Reset all accessories, brands, and categories to the default sample state?")) {
     localStorage.removeItem('koko_catalog_data');
-    adminState.catalog = getSafeCatalog();
+    localStorage.removeItem('koko_catalog_deleted_ids');
+    localStorage.removeItem('koko_catalog_deleted_brands');
+    localStorage.removeItem('koko_catalog_deleted_cats');
+    const defBrands = (typeof DEFAULT_CAR_BRANDS !== 'undefined' && Array.isArray(DEFAULT_CAR_BRANDS)) ? JSON.parse(JSON.stringify(DEFAULT_CAR_BRANDS)) : [];
+    const defCats = (typeof DEFAULT_CATEGORIES !== 'undefined' && Array.isArray(DEFAULT_CATEGORIES)) ? JSON.parse(JSON.stringify(DEFAULT_CATEGORIES)) : [];
+    const defProds = (typeof DEFAULT_PRODUCTS !== 'undefined' && Array.isArray(DEFAULT_PRODUCTS)) ? JSON.parse(JSON.stringify(DEFAULT_PRODUCTS)) : [];
+    adminState.catalog = {
+      brands: defBrands,
+      categories: defCats,
+      products: defProds,
+      deletedProductIds: [],
+      deletedBrandIds: [],
+      deletedCategoryIds: []
+    };
     await syncToDisk(adminState.catalog);
     populateBrandFilterDropdown();
     renderAdminAccessoriesTable();
     renderAdminCategories();
     renderAdminBrands();
+    updateAdminCounters();
     showToast("Reset to default catalog & Saved");
   }
 };

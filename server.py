@@ -131,31 +131,93 @@ const DEFAULT_CATEGORIES = {cats_json};
 const DEFAULT_PRODUCTS = {prods_json};
 
 function getCatalogData() {{
+  let deletedIds = [];
+  let deletedBrands = [];
+  let deletedCats = [];
+  try {{
+    deletedIds = JSON.parse(localStorage.getItem('koko_catalog_deleted_ids') || '[]');
+  }} catch (e) {{}}
+  try {{
+    deletedBrands = JSON.parse(localStorage.getItem('koko_catalog_deleted_brands') || '[]');
+  }} catch (e) {{}}
+  try {{
+    deletedCats = JSON.parse(localStorage.getItem('koko_catalog_deleted_cats') || '[]');
+  }} catch (e) {{}}
+
   try {{
     const saved = localStorage.getItem('koko_catalog_data');
     if (saved) {{
       const parsed = JSON.parse(saved);
-      let prods = Array.isArray(parsed) ? parsed : (parsed && Array.isArray(parsed.products) ? parsed.products : null);
-      if (prods && prods.length >= DEFAULT_PRODUCTS.length) {{
-        return {{
-          brands: (parsed && Array.isArray(parsed.brands) && parsed.brands.length > 0) ? parsed.brands : DEFAULT_CAR_BRANDS,
-          categories: (parsed && Array.isArray(parsed.categories) && parsed.categories.length > 0) ? parsed.categories : DEFAULT_CATEGORIES,
-          products: prods
-        }};
+      if (parsed && typeof parsed === 'object') {{
+        let prods = Array.isArray(parsed) ? parsed : (Array.isArray(parsed.products) ? parsed.products : null);
+        let brands = Array.isArray(parsed.brands) ? parsed.brands : null;
+        let categories = Array.isArray(parsed.categories) ? parsed.categories : null;
+
+        if (Array.isArray(parsed.deletedProductIds)) {{
+          deletedIds = Array.from(new Set([...deletedIds, ...parsed.deletedProductIds]));
+        }}
+        if (Array.isArray(parsed.deletedBrandIds)) {{
+          deletedBrands = Array.from(new Set([...deletedBrands, ...parsed.deletedBrandIds]));
+        }}
+        if (Array.isArray(parsed.deletedCategoryIds)) {{
+          deletedCats = Array.from(new Set([...deletedCats, ...parsed.deletedCategoryIds]));
+        }}
+
+        if (prods !== null) {{
+          return {{
+            brands: (brands && brands.length > 0)
+              ? brands.filter(b => b && b.id && !deletedBrands.includes(b.id))
+              : DEFAULT_CAR_BRANDS.filter(b => !deletedBrands.includes(b.id)),
+            categories: (categories && categories.length > 0)
+              ? categories.filter(c => c && c.id && !deletedCats.includes(c.id))
+              : DEFAULT_CATEGORIES.filter(c => !deletedCats.includes(c.id)),
+            products: prods.filter(p => p && p.id && !deletedIds.includes(p.id)),
+            deletedProductIds: deletedIds,
+            deletedBrandIds: deletedBrands,
+            deletedCategoryIds: deletedCats
+          }};
+        }}
       }}
     }}
   }} catch (e) {{
     console.error("Error reading localStorage:", e);
   }}
+
   return {{
-    brands: DEFAULT_CAR_BRANDS,
-    categories: DEFAULT_CATEGORIES,
-    products: DEFAULT_PRODUCTS
+    brands: DEFAULT_CAR_BRANDS.filter(b => !deletedBrands.includes(b.id)),
+    categories: DEFAULT_CATEGORIES.filter(c => !deletedCats.includes(c.id)),
+    products: DEFAULT_PRODUCTS.filter(p => !deletedIds.includes(p.id)),
+    deletedProductIds: deletedIds,
+    deletedBrandIds: deletedBrands,
+    deletedCategoryIds: deletedCats
   }};
 }}
 
 function saveCatalogData(data) {{
   try {{
+    if (data && typeof data === 'object') {{
+      if (Array.isArray(data.deletedProductIds)) {{
+        try {{
+          const cur = JSON.parse(localStorage.getItem('koko_catalog_deleted_ids') || '[]');
+          const merged = Array.from(new Set([...cur, ...data.deletedProductIds]));
+          localStorage.setItem('koko_catalog_deleted_ids', JSON.stringify(merged));
+        }} catch (e) {{}}
+      }}
+      if (Array.isArray(data.deletedBrandIds)) {{
+        try {{
+          const cur = JSON.parse(localStorage.getItem('koko_catalog_deleted_brands') || '[]');
+          const merged = Array.from(new Set([...cur, ...data.deletedBrandIds]));
+          localStorage.setItem('koko_catalog_deleted_brands', JSON.stringify(merged));
+        }} catch (e) {{}}
+      }}
+      if (Array.isArray(data.deletedCategoryIds)) {{
+        try {{
+          const cur = JSON.parse(localStorage.getItem('koko_catalog_deleted_cats') || '[]');
+          const merged = Array.from(new Set([...cur, ...data.deletedCategoryIds]));
+          localStorage.setItem('koko_catalog_deleted_cats', JSON.stringify(merged));
+        }} catch (e) {{}}
+      }}
+    }}
     localStorage.setItem('koko_catalog_data', JSON.stringify(data));
   }} catch (e) {{
     console.error("Error saving to localStorage:", e);
