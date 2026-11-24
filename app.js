@@ -264,7 +264,10 @@ const UI_STR = {
     heroBtnBrowse: 'BROWSE ALL PARTS',
     factParts: 'Accessories',
     factBrands: 'Car Makes Ready',
-    factSync: 'Cloud Synced',
+    factFitment: 'Guaranteed Fitment',
+    heroPill1: 'Gloss Carbon Key Cover',
+    heroPill2: 'Carbon Paddle Extensions',
+    heroPill3: 'Black & Red Sport Emblem',
     step1Title: 'Step 1 • Select Your Vehicle',
     step1Hint: 'Showing in-stock brands first • Tap + More Brands for all makes',
     step1MobileLabel: 'Step 1 • Your Vehicle',
@@ -322,7 +325,10 @@ const UI_STR = {
     heroBtnBrowse: 'تصفح كل الإكسسوارات',
     factParts: 'قطعة متوفرة',
     factBrands: 'ماركة سيارات',
-    factSync: 'مزامنة سحابية',
+    factFitment: 'ضمان تطابق المقاس',
+    heroPill1: 'جراب مفتاح كاربون فايبر',
+    heroPill2: 'تطويلة شيفتات طارة كاربون',
+    heroPill3: 'شعار سبورت أسود وأحمر',
     step1Title: 'الخطوة ١ • اختر سيارتك',
     step1Hint: 'تظهر السيارات المتوفرة أولاً • اضغط ماركات أخرى للمزيد',
     step1MobileLabel: 'الخطوة ١ • نوع سيارتك',
@@ -428,16 +434,13 @@ function initTheme() {
 
 function applyTheme(theme) {
   const html = document.documentElement;
-  const icon = document.getElementById('themeToggleIcon');
   const label = document.getElementById('themeToggleLabel');
 
   if (theme === 'dark') {
     html.classList.add('dark');
-    if (icon) icon.textContent = '🌙';
     if (label) label.textContent = state.lang === 'ar' ? 'داكن' : 'DARK';
   } else {
     html.classList.remove('dark');
-    if (icon) icon.textContent = '☀️';
     if (label) label.textContent = state.lang === 'ar' ? 'فاتح' : 'LIGHT';
   }
   try { localStorage.setItem('koko_theme', theme); } catch (e) {}

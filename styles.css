@@ -320,17 +320,193 @@ html[lang="ar"] .brand-title {
 .btn-outline:hover { background: var(--bg-elevated); }
 
 /* ============================================================
-   EDITORIAL WEBSITE HERO SECTION (DYNAMICALLY POPULATED)
+   EDITORIAL WEBSITE HERO SECTION (ATMOSPHERIC BACKDROP & BADGES)
    ============================================================ */
 .hero-band {
+  position: relative;
   background: var(--bg-surface);
   border-bottom: 1px solid var(--border-soft);
-  padding-block: 42px;
+  padding-block: 48px;
+  overflow: hidden;
+  isolation: isolate;
+  min-height: 520px;
+  display: flex;
+  align-items: center;
 }
+
+/* Layered Hero Backdrop */
+.hero-backdrop-container {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+/* 1. Real BMW M Performance Coupe Background (User Approved: "This is the best") */
+.hero-bg-car {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  inset-inline-end: 0;
+  width: 65%;
+  background-image: url('https://images.unsplash.com/photo-1555215695-3004980ad54e?auto=format&fit=crop&w=2000&q=90');
+  background-size: cover;
+  background-position: center 48%;
+  background-repeat: no-repeat;
+  opacity: 0.54;
+  filter: contrast(1.14) brightness(0.96);
+  transition: opacity 0.3s ease, transform 0.4s ease;
+}
+
+html:not(.dark) .hero-bg-car {
+  opacity: 0.52;
+  mix-blend-mode: normal;
+  filter: contrast(1.08) brightness(0.96);
+}
+
+/* 2. Stylish German Flag Tri-Color Racing Ribbon (PC & Mobile) */
+.hero-bg-german-flag {
+  position: absolute;
+  top: -30px;
+  inset-inline-end: 16%;
+  width: 250px;
+  height: 145%;
+  transform: rotate(-18deg);
+  display: flex;
+  opacity: 0.32;
+  pointer-events: none;
+  filter: blur(1.5px);
+}
+.flag-stripe { flex: 1; height: 100%; }
+.stripe-black { background: #181A1F; }
+.stripe-red { background: #C81E1E; box-shadow: 0 0 35px rgba(200, 30, 30, 0.45); }
+.stripe-gold { background: #D49B00; box-shadow: 0 0 35px rgba(212, 155, 0, 0.4); }
+
+/* Top German Flag Edge Line */
+.hero-flag-accent-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent 0%, #1e2028 15%, #C81E1E 50%, #D49B00 85%, transparent 100%);
+  opacity: 0.95;
+}
+
+/* 3. German Flag Radiant Ambient Glow */
+.hero-bg-flag-glow {
+  position: absolute;
+  inset: 0;
+  background: 
+    radial-gradient(ellipse 52% 46% at 76% 40%, rgba(200, 30, 30, 0.19), transparent 70%),
+    radial-gradient(ellipse 44% 40% at 88% 68%, rgba(212, 155, 0, 0.17), transparent 70%),
+    radial-gradient(circle at 10% 50%, rgba(17, 18, 21, 0.72) 0%, transparent 60%);
+  mix-blend-mode: screen;
+  opacity: 0.88;
+}
+
+html:not(.dark) .hero-bg-german-flag {
+  opacity: 0.38;
+  filter: blur(1px);
+}
+html:not(.dark) .stripe-black { background: #16181D; }
+html:not(.dark) .stripe-red { background: #C41818; box-shadow: 0 0 25px rgba(196, 24, 24, 0.25); }
+html:not(.dark) .stripe-gold { background: #D49500; box-shadow: 0 0 25px rgba(212, 149, 0, 0.22); }
+
+html:not(.dark) .hero-bg-flag-glow {
+  background: 
+    radial-gradient(ellipse 52% 46% at 76% 40%, rgba(196, 24, 24, 0.12), transparent 70%),
+    radial-gradient(ellipse 44% 40% at 88% 68%, rgba(212, 149, 0, 0.10), transparent 70%);
+  mix-blend-mode: normal;
+}
+
+/* 4. Text-Protection Vignette (Guarantees 100% Typography Readability) */
+.hero-bg-vignette {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to right,
+    var(--bg-surface) 0%,
+    var(--bg-surface) 38%,
+    rgba(24, 26, 31, 0.86) 54%,
+    rgba(24, 26, 31, 0.22) 75%,
+    rgba(24, 26, 31, 0.6) 100%
+  );
+}
+
+html:not(.dark) #heroBand {
+  background: #F6F7F9;
+}
+
+html:not(.dark) .hero-bg-vignette {
+  background: linear-gradient(
+    to right,
+    #F6F7F9 0%,
+    #F6F7F9 36%,
+    rgba(246, 247, 249, 0.88) 52%,
+    rgba(246, 247, 249, 0.14) 72%,
+    rgba(246, 247, 249, 0.35) 100%
+  );
+}
+
+.hero-bg-bottom-fade {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 50px;
+  background: linear-gradient(to top, var(--bg-surface) 0%, transparent 100%);
+}
+
+/* ============================================================
+   FULL ARABIC RTL MIRRORING COMPATIBILITY
+   ============================================================ */
+html[dir="rtl"] .hero-bg-car {
+  left: 0 !important;
+  right: auto !important;
+  width: 66% !important;
+  transform: scaleX(-1) !important;
+  background-position: center 48% !important;
+}
+html[dir="rtl"] .hero-bg-german-flag {
+  left: 18% !important;
+  right: auto !important;
+  transform: rotate(18deg) !important;
+  opacity: 0.35 !important;
+}
+html[dir="rtl"] .hero-bg-flag-glow {
+  background: 
+    radial-gradient(ellipse 52% 46% at 24% 40%, rgba(200, 30, 30, 0.22), transparent 70%),
+    radial-gradient(ellipse 44% 40% at 12% 68%, rgba(212, 155, 0, 0.19), transparent 70%) !important;
+}
+html[dir="rtl"] .hero-bg-vignette {
+  background: linear-gradient(
+    to left,
+    var(--bg-surface) 0%,
+    var(--bg-surface) 42%,
+    rgba(24, 26, 31, 0.85) 55%,
+    rgba(24, 26, 31, 0.18) 75%,
+    rgba(24, 26, 31, 0.45) 100%
+  ) !important;
+}
+html:not(.dark)[dir="rtl"] .hero-bg-vignette {
+  background: linear-gradient(
+    to left,
+    #F6F7F9 0%,
+    #F6F7F9 36%,
+    rgba(246, 247, 249, 0.88) 52%,
+    rgba(246, 247, 249, 0.14) 72%,
+    rgba(246, 247, 249, 0.35) 100%
+  ) !important;
+}
+
 .hero-grid {
+  position: relative;
+  z-index: 1;
   display: grid;
-  grid-template-columns: 1fr 1.05fr;
-  gap: 40px;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 36px;
   align-items: center;
 }
 .hero-copy {
@@ -379,46 +555,99 @@ html[lang="ar"] .brand-title {
 }
 .hero-stats-line strong { color: var(--text-main); font-size: 15px; font-weight: 700; }
 
-.hero-collage {
-  display: grid;
-  grid-template-columns: 1.18fr 0.82fr;
+/* High-Res Floating Parts (Using real CDN URLs to prevent broken images) */
+.hero-floating-parts {
+  display: flex;
+  flex-direction: column;
   gap: 12px;
+  align-items: flex-end;
+}
+html[dir="rtl"] .hero-floating-parts {
+  align-items: flex-start;
+}
+
+.hero-part-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(24, 26, 31, 0.72);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  padding: 8px 14px 8px 10px;
+  color: var(--text-main);
+  cursor: pointer;
+  text-decoration: none;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
+  transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+  max-width: 320px;
+}
+.hero-part-badge:hover {
+  transform: translateY(-2px);
+  border-color: var(--de-gold);
+  background: rgba(24, 26, 31, 0.88);
+}
+.hero-part-badge img {
+  width: 44px;
+  height: 44px;
+  object-fit: cover;
+  border-radius: 10px;
+  flex-shrink: 0;
+  border: 1px solid var(--border-soft);
+}
+.hero-part-badge-text {
+  display: flex;
+  flex-direction: column;
   min-width: 0;
 }
-.collage-tile {
-  position: relative;
-  display: block;
-  width: 100%;
-  border-radius: 14px;
-  overflow: hidden;
-  background: var(--bg-img-box);
-  border: 1px solid var(--border-soft);
-  padding: 0;
-  cursor: pointer;
-}
-.collage-main { aspect-ratio: 4 / 4.2; }
-.collage-stack { display: grid; grid-template-rows: 1fr 1fr; gap: 12px; }
-.collage-side { aspect-ratio: 1 / 1; }
-.collage-tile img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform 0.35s var(--ease-zara);
-}
-.collage-tile:hover img { transform: scale(1.03); }
-.collage-badge {
-  position: absolute;
-  bottom: 10px;
-  inset-inline-start: 10px;
-  background: rgba(17, 18, 21, 0.84);
-  color: var(--de-gold);
-  font-size: 10px;
+.hero-part-badge-car {
+  font-size: 9.5px;
   font-weight: 700;
-  letter-spacing: 0.05em;
+  color: var(--de-gold);
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  padding: 4px 8px;
-  border-radius: 6px;
-  pointer-events: none;
+}
+.hero-part-badge-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+html:not(.dark) .hero-part-badge {
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.07);
+  color: #181A1F;
+}
+html:not(.dark) .hero-part-badge:hover {
+  background: #FFFFFF;
+  border-color: #D49B00;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.12);
+}
+html:not(.dark) .hero-part-badge-car {
+  color: #B47D00;
+}
+html:not(.dark) .hero-part-badge-name {
+  color: #181A1F;
+}
+
+/* ============================================================
+   THEME TOGGLE BUTTON: STRICTLY ZERO EMOJIS & ZERO ICONS
+   Clean, sharp, minimal luxury typography
+   ============================================================ */
+.theme-btn-pure-text {
+  height: 36px;
+  padding: 0 14px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 /* ============================================================
@@ -2238,11 +2467,87 @@ table.sales-table {
   .card-title { font-size: 11.5px; }
   .card-meta-row { border-top: none; padding-top: 0; font-size: 10px; }
 
-  .hero-band { padding-block: 22px 26px; }
+  .hero-band {
+    min-height: 480px;
+    padding-block: 28px 32px;
+  }
+  .hero-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
   .hero-h1 { font-size: 27px; }
   .hero-desc { font-size: 13.5px; }
-  .hero-collage { gap: 8px; }
-  .collage-stack { gap: 8px; }
+  /* The BMW M Performance car is clearly visible on mobile too! */
+  .hero-bg-car {
+    width: 100%;
+    opacity: 0.42;
+    background-position: center 30%;
+  }
+  html:not(.dark) .hero-bg-car {
+    opacity: 0.38;
+  }
+  /* Stylish German Flag Ribbon active on mobile! */
+  .hero-bg-german-flag {
+    display: flex;
+    width: 140px;
+    height: 125%;
+    top: -20px;
+    inset-inline-end: 4%;
+    transform: rotate(-14deg);
+    opacity: 0.24;
+  }
+  html[dir="rtl"] .hero-bg-german-flag {
+    left: 4% !important;
+    right: auto !important;
+    transform: rotate(14deg) !important;
+  }
+  /* Mobile Vignette: ensures headline & buttons are 100% readable */
+  .hero-bg-vignette {
+    background: linear-gradient(
+      to bottom,
+      rgba(24, 26, 31, 0.72) 0%,
+      rgba(24, 26, 31, 0.88) 58%,
+      var(--bg-surface) 100%
+    );
+  }
+  html:not(.dark) .hero-bg-vignette {
+    background: linear-gradient(
+      to bottom,
+      rgba(246, 247, 249, 0.72) 0%,
+      rgba(246, 247, 249, 0.88) 58%,
+      #F6F7F9 100%
+    );
+  }
+  /* Mobile Floating Badges: Compact clean horizontal swipe pills */
+  .hero-floating-parts {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    width: 100%;
+    gap: 8px;
+    padding-bottom: 4px;
+    align-items: center;
+  }
+  .hero-floating-parts::-webkit-scrollbar { display: none; }
+  .hero-part-badge {
+    flex-shrink: 0;
+    padding: 6px 10px;
+    gap: 8px;
+    border-radius: 12px;
+    max-width: 240px;
+  }
+  .hero-part-badge img {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+  }
+  .hero-part-badge-car {
+    font-size: 8.5px;
+  }
+  .hero-part-badge-name {
+    font-size: 11px;
+  }
   .steps-grid, .footer-grid { grid-template-columns: 1fr; }
 
   .modal-overlay {

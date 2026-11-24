@@ -75,8 +75,7 @@
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
           </button>
 
-          <button id="themeToggleBtn" type="button" class="header-btn" onclick="toggleTheme()" aria-label="Toggle Dark / Light Mode">
-            <span id="themeToggleIcon">🌙</span>
+          <button id="themeToggleBtn" type="button" class="header-btn theme-btn-pure-text" onclick="toggleTheme()" aria-label="Toggle Dark / Light Mode">
             <span id="themeToggleLabel">DARK</span>
           </button>
         </div>
@@ -94,41 +93,74 @@
 
   <!-- 2. EDITORIAL WEBSITE HERO SECTION (DYNAMICALLY POPULATED) -->
   <section id="heroBand" class="hero-band">
+    <!-- Top German Flag Edge Line -->
+    <div class="hero-flag-accent-bar" aria-hidden="true"></div>
+
+    <!-- Multi-Layer Atmospheric Backdrop -->
+    <div class="hero-backdrop-container" aria-hidden="true">
+      <!-- Clearly visible BMW M Performance Sports Car -->
+      <div id="heroBgCar" class="hero-bg-car"></div>
+
+      <!-- Stylish German Racing Flag Ribbon (Angled 3-Stripe) -->
+      <div id="heroGermanFlag" class="hero-bg-german-flag">
+        <div class="flag-stripe stripe-black"></div>
+        <div class="flag-stripe stripe-red"></div>
+        <div class="flag-stripe stripe-gold"></div>
+      </div>
+
+      <!-- German Flag Radiant Color Aura -->
+      <div class="hero-bg-flag-glow"></div>
+
+      <!-- Directional Vignette (Protects Text Readability) -->
+      <div class="hero-bg-vignette"></div>
+
+      <!-- Bottom Seamless Fade -->
+      <div class="hero-bg-bottom-fade"></div>
+    </div>
+
     <div class="koko-container">
       <div class="hero-grid">
         <div class="hero-copy">
           <span class="hero-kicker" data-i18n="heroKicker">KOKO AUTOMOTIVE ATELIER &bull; EGYPT</span>
           <h1 class="hero-h1" data-i18n="heroTitle">Precision Accessories Tailored for Your Car.</h1>
           <p class="hero-desc" data-i18n="heroDesc">
-            Browse real multi-angle hardware photos across every stocked vehicle make. Select your car, check stock instantly, and order via WhatsApp &mdash; updated live with the Admin Portal.
+            Browse real multi-angle hardware photos across every stocked vehicle make. Select your car, check stock instantly, and order via WhatsApp &mdash; guaranteed perfect fitment.
           </p>
           <div class="hero-cta-row">
             <a href="#vehicleSection" class="btn-black" data-i18n="heroBtnCar">CHOOSE YOUR CAR</a>
             <a href="#catalogSection" class="btn-outline" data-i18n="heroBtnBrowse">BROWSE ALL PARTS</a>
           </div>
+
+          <!-- Customer Stats Line (Accessories & Guaranteed Fitment) -->
           <div class="hero-stats-line">
             <span><strong id="heroStatParts" class="tabular">43</strong> <span data-i18n="factParts">Accessories</span></span>
             <span>&bull;</span>
-            <span><strong id="heroStatBrands" class="tabular">25</strong> <span data-i18n="factBrands">Car Makes Ready</span></span>
-            <span>&bull;</span>
-            <span><strong id="heroStatSync" style="color:var(--stock-green);">LIVE</strong> <span data-i18n="factSync">Cloud Synced</span></span>
+            <span><strong style="color:var(--de-gold);">100%</strong> <span data-i18n="factFitment">Guaranteed Fitment</span></span>
           </div>
         </div>
 
-        <div id="heroCollage" class="hero-collage" aria-label="Featured vehicle accessories showcase">
-          <button type="button" class="collage-tile collage-main" onclick="openHeroCollageItem(0)" aria-label="Featured accessory photo 1">
-            <img id="heroImg0" src="images/keycovers/audi-s-line-key-front.jpg" alt="Featured automotive accessory" loading="eager" />
-            <span id="heroBadge0" class="collage-badge">AUDI &bull; KEY COVER</span>
-          </button>
-          <div class="collage-stack">
-            <button type="button" class="collage-tile collage-side" onclick="openHeroCollageItem(1)" aria-label="Featured accessory photo 2">
-              <img id="heroImg1" src="images/shifters/cupra-carbon-fiber-paddle-extensions-front.jpg" alt="Featured automotive accessory" loading="lazy" />
-              <span id="heroBadge1" class="collage-badge">CUPRA &bull; SHIFTERS</span>
-            </button>
-            <button type="button" class="collage-tile collage-side" onclick="openHeroCollageItem(2)" aria-label="Featured accessory photo 3">
-              <img id="heroImg2" src="images/badges/cupra-front-grille-emblem-badge-copper-front.jpg" alt="Featured automotive accessory" loading="lazy" />
-              <span id="heroBadge2" class="collage-badge">BADGES</span>
-            </button>
+        <!-- Featured Floating Accessories Badges -->
+        <div class="hero-floating-parts">
+          <div class="hero-part-badge" onclick="openHeroCollageItem(0)">
+            <img id="heroImg0" src="images/audi_gloss_carbon_key_fob_cover_shell_1.jpg" alt="Featured accessory" />
+            <div class="hero-part-badge-text">
+              <span id="heroBadge0" class="hero-part-badge-car">AUDI &bull; S-LINE</span>
+              <span class="hero-part-badge-name" data-i18n="heroPill1">Gloss Carbon Key Cover</span>
+            </div>
+          </div>
+          <div class="hero-part-badge" onclick="openHeroCollageItem(1)">
+            <img id="heroImg1" src="images/audi_carbon_fiber_paddle_shifter_extensions_1.jpg" alt="Featured accessory" />
+            <div class="hero-part-badge-text">
+              <span id="heroBadge1" class="hero-part-badge-car">AUDI &bull; PADDLE SHIFTER</span>
+              <span class="hero-part-badge-name" data-i18n="heroPill2">Carbon Paddle Extensions</span>
+            </div>
+          </div>
+          <div class="hero-part-badge" onclick="openHeroCollageItem(2)">
+            <img id="heroImg2" src="images/audi_a3_black_red_sport_badge.jpg" alt="Featured accessory" />
+            <div class="hero-part-badge-text">
+              <span id="heroBadge2" class="hero-part-badge-car">AUDI &bull; SPORT BADGE</span>
+              <span class="hero-part-badge-name" data-i18n="heroPill3">Black & Red Sport Emblem</span>
+            </div>
           </div>
         </div>
       </div>
