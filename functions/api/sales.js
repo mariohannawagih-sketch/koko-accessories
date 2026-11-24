@@ -6,7 +6,8 @@
 const CORS_HEADERS = {
   "Content-Type": "application/json",
   "Access-Control-Allow-Origin": "*",
-  "Cache-Control": "no-cache, no-store, must-revalidate"
+  "Cache-Control": "no-cache, no-store, must-revalidate",
+  "Pragma": "no-cache"
 };
 
 export async function onRequestGet(context) {
@@ -43,14 +44,16 @@ export async function onRequestPost(context) {
     }
 
     if (env.KOKO_CATALOG) {
+      const updatedAt = Math.max(Number(parsed.updatedAt) || 0, Date.now());
       const payload = JSON.stringify({
         sales: parsed.sales,
-        updatedAt: new Date().toISOString()
+        updatedAt
       });
       await env.KOKO_CATALOG.put("sales_ledger_data", payload);
       return new Response(JSON.stringify({
         status: "ok",
         count: parsed.sales.length,
+        updatedAt,
         message: "Saved sales ledger to Cloudflare KV"
       }), {
         status: 200,

@@ -36,7 +36,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..900;1,6..96,400..900&family=Cairo:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
 
   <!-- Custom Stylesheet -->
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=20261124">
 </head>
 <body id="top">
 
@@ -52,7 +52,7 @@
               <span class="de-gold"></span>
             </span>
             <div>
-              <span class="brand-title font-racing">KOKO ACCESSORIES</span>
+              <span class="brand-title font-racing" dir="ltr">KOKO ACCESSORIES</span>
               <span class="brand-sub-line"></span>
             </div>
           </a>
@@ -141,25 +141,25 @@
 
         <!-- Featured Floating Accessories Badges -->
         <div class="hero-floating-parts">
-          <div class="hero-part-badge" onclick="openHeroCollageItem(0)">
+          <div id="heroCard0" class="hero-part-badge" onclick="openHeroCollageItem(0)">
             <img id="heroImg0" src="images/audi_gloss_carbon_key_fob_cover_shell_1.jpg" alt="Featured accessory" />
             <div class="hero-part-badge-text">
               <span id="heroBadge0" class="hero-part-badge-car">AUDI &bull; S-LINE</span>
-              <span class="hero-part-badge-name" data-i18n="heroPill1">Gloss Carbon Key Cover</span>
+              <span id="heroName0" class="hero-part-badge-name">Gloss Carbon Key Cover</span>
             </div>
           </div>
-          <div class="hero-part-badge" onclick="openHeroCollageItem(1)">
+          <div id="heroCard1" class="hero-part-badge" onclick="openHeroCollageItem(1)">
             <img id="heroImg1" src="images/audi_carbon_fiber_paddle_shifter_extensions_1.jpg" alt="Featured accessory" />
             <div class="hero-part-badge-text">
               <span id="heroBadge1" class="hero-part-badge-car">AUDI &bull; PADDLE SHIFTER</span>
-              <span class="hero-part-badge-name" data-i18n="heroPill2">Carbon Paddle Extensions</span>
+              <span id="heroName1" class="hero-part-badge-name">Carbon Paddle Extensions</span>
             </div>
           </div>
-          <div class="hero-part-badge" onclick="openHeroCollageItem(2)">
+          <div id="heroCard2" class="hero-part-badge" onclick="openHeroCollageItem(2)">
             <img id="heroImg2" src="images/audi_a3_black_red_sport_badge.jpg" alt="Featured accessory" />
             <div class="hero-part-badge-text">
               <span id="heroBadge2" class="hero-part-badge-car">AUDI &bull; SPORT BADGE</span>
-              <span class="hero-part-badge-name" data-i18n="heroPill3">Black & Red Sport Emblem</span>
+              <span id="heroName2" class="hero-part-badge-name">Black &amp; Red Sport Emblem</span>
             </div>
           </div>
         </div>
@@ -214,8 +214,8 @@
         <div id="categoriesContainer" class="categories-wrap"></div>
         <div class="results-meta">
           <button type="button" id="stockFilterBtn" class="stock-filter-btn" onclick="toggleStockFilter()" data-i18n="inStockOnly">IN STOCK ONLY</button>
-          <span id="itemCountDisplay">LOADING ACCESSORIES...</span>
-          <button id="resetFilterBtn" type="button" class="reset-link" onclick="resetCarFilter()">Reset filters</button>
+          <span id="itemCountDisplay" data-i18n="itemLoading">LOADING ACCESSORIES...</span>
+          <button id="resetFilterBtn" type="button" class="reset-link" onclick="resetCarFilter()" data-i18n="resetFilters">Reset filters</button>
         </div>
       </div>
 
@@ -252,8 +252,8 @@
     <footer id="siteFooter" class="site-footer">
       <div class="footer-grid">
         <div class="footer-col">
-          <h4 class="font-racing">KOKO ACCESSORIES</h4>
-          <p data-i18n="footerAbout">Automotive badges, smart key shells, floor mats &amp; cockpit styling accessories across Egypt. Everything syncs live with your Admin Portal.</p>
+          <h4 class="font-racing" data-i18n="footerBrandTitle">KOKO ACCESSORIES</h4>
+          <p data-i18n="footerAbout">Automotive badges, smart key shells, floor mats &amp; cockpit styling accessories across Egypt &mdash; guaranteed OEM fitment.</p>
         </div>
         <div class="footer-col">
           <h4 data-i18n="footerCars">Popular Car Brands</h4>
@@ -262,7 +262,7 @@
         <div class="footer-col">
           <h4 data-i18n="footerContact">Direct Support</h4>
           <ul class="footer-links">
-            <li><a href="https://wa.me/201117781675" target="_blank" rel="noopener">WhatsApp: +20 111 778 1675</a></li>
+            <li><a href="https://wa.me/201117781675" target="_blank" rel="noopener"><span data-i18n="footerWhatsappLabel">WhatsApp:</span> <span dir="ltr">+20 111 778 1675</span></a></li>
             <li><a href="#top" data-i18n="backToTop">Back to Top &uarr;</a></li>
           </ul>
         </div>
@@ -311,7 +311,7 @@
     <div class="modal-box" onclick="event.stopPropagation()">
       <div class="sheet-handle"></div>
       <div class="modal-header">
-        <span id="modalDetailBrandTitle" class="modal-title font-racing">ACCESSORY DETAILS</span>
+        <span id="modalDetailBrandTitle" class="modal-title font-racing" data-i18n="accessoryDetailsTitle">ACCESSORY DETAILS</span>
         <button type="button" class="modal-close" onclick="closeDetailModal()">&times;</button>
       </div>
       <div id="detailContent" class="modal-body"></div>
@@ -339,7 +339,7 @@
   </a>
 
   <!-- Scripts -->
-  <script src="products.js"></script>
-  <script src="app.js"></script>
+  <script src="products.js?v=20261124"></script>
+  <script src="app.js?v=20261124"></script>
 </body>
 </html>

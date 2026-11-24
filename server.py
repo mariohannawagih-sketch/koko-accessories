@@ -134,6 +134,7 @@ function getCatalogData() {{
   let deletedIds = [];
   let deletedBrands = [];
   let deletedCats = [];
+  let fallbackUpdatedAt = 0;
   try {{
     deletedIds = JSON.parse(localStorage.getItem('koko_catalog_deleted_ids') || '[]');
   }} catch (e) {{}}
@@ -142,6 +143,9 @@ function getCatalogData() {{
   }} catch (e) {{}}
   try {{
     deletedCats = JSON.parse(localStorage.getItem('koko_catalog_deleted_cats') || '[]');
+  }} catch (e) {{}}
+  try {{
+    fallbackUpdatedAt = Number(localStorage.getItem('koko_catalog_updated_at') || 0) || 0;
   }} catch (e) {{}}
 
   try {{
@@ -164,6 +168,14 @@ function getCatalogData() {{
         }}
 
         if (prods !== null) {{
+          const normalizedProds = prods
+            .filter(p => p && p.id && !deletedIds.includes(p.id))
+            .map(p => {{
+              const copy = {{ ...p, isSoldOut: Boolean(p.isSoldOut || p.soldOut) }};
+              if ('soldOut' in copy) delete copy.soldOut;
+              return copy;
+            }});
+
           return {{
             brands: (brands && brands.length > 0)
               ? brands.filter(b => b && b.id && !deletedBrands.includes(b.id))
@@ -171,10 +183,11 @@ function getCatalogData() {{
             categories: (categories && categories.length > 0)
               ? categories.filter(c => c && c.id && !deletedCats.includes(c.id))
               : DEFAULT_CATEGORIES.filter(c => !deletedCats.includes(c.id)),
-            products: prods.filter(p => p && p.id && !deletedIds.includes(p.id)),
+            products: normalizedProds,
             deletedProductIds: deletedIds,
             deletedBrandIds: deletedBrands,
-            deletedCategoryIds: deletedCats
+            deletedCategoryIds: deletedCats,
+            updatedAt: Number(parsed.updatedAt || fallbackUpdatedAt || 0) || 0
           }};
         }}
       }}
@@ -186,41 +199,90 @@ function getCatalogData() {{
   return {{
     brands: DEFAULT_CAR_BRANDS.filter(b => !deletedBrands.includes(b.id)),
     categories: DEFAULT_CATEGORIES.filter(c => !deletedCats.includes(c.id)),
-    products: DEFAULT_PRODUCTS.filter(p => !deletedIds.includes(p.id)),
+    products: DEFAULT_PRODUCTS
+      .filter(p => p && p.id && !deletedIds.includes(p.id))
+      .map(p => ({{ ...p, isSoldOut: Boolean(p.isSoldOut || p.soldOut) }})),
     deletedProductIds: deletedIds,
     deletedBrandIds: deletedBrands,
-    deletedCategoryIds: deletedCats
+    deletedCategoryIds: deletedCats,
+    updatedAt: fallbackUpdatedAt
   }};
 }}
 
-function saveCatalogData(data) {{
+function saveCatalogData(data, options) {{
+  const opts = (options && typeof options === 'object') ? options : {{}};
+  const replaceTombstones = Boolean(opts.replaceTombstones);
+
   try {{
     if (data && typeof data === 'object') {{
       if (Array.isArray(data.deletedProductIds)) {{
         try {{
-          const cur = JSON.parse(localStorage.getItem('koko_catalog_deleted_ids') || '[]');
-          const merged = Array.from(new Set([...cur, ...data.deletedProductIds]));
-          localStorage.setItem('koko_catalog_deleted_ids', JSON.stringify(merged));
+          if (replaceTombstones) {{
+            localStorage.setItem('koko_catalog_deleted_ids', JSON.stringify(Array.from(new Set(data.deletedProductIds))));
+          }} else {{
+            const cur = JSON.parse(localStorage.getItem('koko_catalog_deleted_ids') || '[]');
+            const merged = Array.from(new Set([...cur, ...data.deletedProductIds]));
+            localStorage.setItem('koko_catalog_deleted_ids', JSON.stringify(merged));
+          }}
         }} catch (e) {{}}
       }}
       if (Array.isArray(data.deletedBrandIds)) {{
         try {{
-          const cur = JSON.parse(localStorage.getItem('koko_catalog_deleted_brands') || '[]');
-          const merged = Array.from(new Set([...cur, ...data.deletedBrandIds]));
-          localStorage.setItem('koko_catalog_deleted_brands', JSON.stringify(merged));
+          if (replaceTombstones) {{
+            localStorage.setItem('koko_catalog_deleted_brands', JSON.stringify(Array.from(new Set(data.deletedBrandIds))));
+          }} else {{
+            const cur = JSON.parse(localStorage.getItem('koko_catalog_deleted_brands') || '[]');
+            const merged = Array.from(new Set([...cur, ...data.deletedBrandIds]));
+            localStorage.setItem('koko_catalog_deleted_brands', JSON.stringify(merged));
+          }}
         }} catch (e) {{}}
       }}
       if (Array.isArray(data.deletedCategoryIds)) {{
         try {{
-          const cur = JSON.parse(localStorage.getItem('koko_catalog_deleted_cats') || '[]');
-          const merged = Array.from(new Set([...cur, ...data.deletedCategoryIds]));
-          localStorage.setItem('koko_catalog_deleted_cats', JSON.stringify(merged));
+          if (replaceTombstones) {{
+            localStorage.setItem('koko_catalog_deleted_cats', JSON.stringify(Array.from(new Set(data.deletedCategoryIds))));
+          }} else {{
+            const cur = JSON.parse(localStorage.getItem('koko_catalog_deleted_cats') || '[]');
+            const merged = Array.from(new Set([...cur, ...data.deletedCategoryIds]));
+            localStorage.setItem('koko_catalog_deleted_cats', JSON.stringify(merged));
+          }}
+        }} catch (e) {{}}
+      }}
+      if (data.updatedAt) {{
+        try {{
+          localStorage.setItem('koko_catalog_updated_at', String(data.updatedAt));
         }} catch (e) {{}}
       }}
     }}
+
     localStorage.setItem('koko_catalog_data', JSON.stringify(data));
+    return true;
   }} catch (e) {{
-    console.error("Error saving to localStorage:", e);
+    console.warn("Primary localStorage save exceeded quota, attempting lightweight cache fallback:", e);
+    try {{
+      localStorage.removeItem('koko_catalog_data');
+      if (data && typeof data === 'object' && Array.isArray(data.products)) {{
+        const isHugeInline = v => typeof v === 'string' && v.startsWith('data:image/') && v.length > 100000;
+        const liteCatalog = {{
+          ...data,
+          products: data.products.map(p => {{
+            if (!p || typeof p !== 'object') return p;
+            const filteredImgs = Array.isArray(p.images) ? p.images.filter(im => !isHugeInline(im)) : [];
+            const liteImg = isHugeInline(p.image) ? (filteredImgs[0] || '') : p.image;
+            return {{
+              ...p,
+              image: liteImg,
+              images: filteredImgs.length > 0 ? filteredImgs : (liteImg ? [liteImg] : [])
+            }};
+          }})
+        }};
+        localStorage.setItem('koko_catalog_data', JSON.stringify(liteCatalog));
+        return false;
+      }}
+    }} catch (eFallback) {{
+      console.error("Failed lightweight localStorage fallback:", eFallback);
+    }}
+    return false;
   }}
 }}
 """

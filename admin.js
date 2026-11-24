@@ -48,10 +48,21 @@ function getSafeCatalog() {
 
   let brands = rawBrands.filter(b => b && b.id && !deletedBrands.includes(b.id));
   let categories = rawCats.filter(c => c && c.id && !deletedCats.includes(c.id));
-  let products = rawProds.filter(p => p && p.id && !deletedIds.includes(p.id));
+  let products = rawProds
+    .filter(p => p && p.id && !deletedIds.includes(p.id))
+    .map(p => {
+      const copy = { ...p, isSoldOut: Boolean(p.isSoldOut || p.soldOut) };
+      if ('soldOut' in copy) delete copy.soldOut;
+      return copy;
+    });
 
   if (!brands.some(b => b.id === 'all')) {
     brands.unshift({ id: "all", name: "ALL CARS", logo: "ALL" });
+  }
+
+  let updatedAt = Number(cat.updatedAt || 0) || 0;
+  if (!updatedAt) {
+    try { updatedAt = Number(localStorage.getItem('koko_catalog_updated_at') || 0) || 0; } catch (e) {}
   }
 
   return {
@@ -60,8 +71,21 @@ function getSafeCatalog() {
     products,
     deletedProductIds: deletedIds,
     deletedBrandIds: deletedBrands,
-    deletedCategoryIds: deletedCats
+    deletedCategoryIds: deletedCats,
+    updatedAt
   };
+}
+
+const CATALOG_DIRTY_KEY = 'koko_catalog_dirty';
+const CATALOG_UPDATED_KEY = 'koko_catalog_updated_at';
+
+function parseTimeMs(val) {
+  if (!val) return 0;
+  if (typeof val === 'number' && Number.isFinite(val)) return val;
+  const asNum = Number(val);
+  if (Number.isFinite(asNum) && asNum > 0) return asNum;
+  const parsed = Date.parse(String(val));
+  return Number.isFinite(parsed) ? parsed : 0;
 }
 
 function normCat(val) {
@@ -101,6 +125,7 @@ let adminState = {
   isDiskSyncConnected: false,
   isCloudSyncConnected: false,
   hasMergedCloudOnce: false,
+  isSyncingCatalog: false,
   sales: [],
   salesPeriod: '7d',
   editingSaleId: null,
@@ -169,15 +194,12 @@ function initAdminTheme() {
 
 function applyAdminTheme(theme) {
   const html = document.documentElement;
-  const icon = document.getElementById('adminThemeIcon');
   const label = document.getElementById('adminThemeLabel');
   if (theme === 'dark') {
     html.classList.add('dark');
-    if (icon) icon.textContent = '🌙';
     if (label) label.textContent = 'DARK';
   } else {
     html.classList.remove('dark');
-    if (icon) icon.textContent = '☀️';
     if (label) label.textContent = 'LIGHT';
   }
   try { localStorage.setItem('koko_theme', theme); } catch (e) {}
@@ -197,90 +219,137 @@ document.addEventListener('DOMContentLoaded', () => {
   if (savedLogin === 'true') {
     adminState.isLoggedIn = true;
     showDashboard();
+  } else {
+    checkDiskSyncConnection(false);
   }
-  checkDiskSyncConnection();
-  setInterval(checkDiskSyncConnection, 5000);
+  setInterval(() => checkDiskSyncConnection(false), 5000);
 });
 
-async function checkDiskSyncConnection() {
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && adminState.isLoggedIn) {
+    checkDiskSyncConnection(true);
+    loadSalesFromCloud(true);
+  }
+});
+
+window.addEventListener('pageshow', (e) => {
+  if (e.persisted && adminState.isLoggedIn) {
+    checkDiskSyncConnection(true);
+    loadSalesFromCloud(true);
+  }
+});
+
+async function fetchCloudCatalog(force = false) {
+  const isDirty = (() => {
+    try { return localStorage.getItem(CATALOG_DIRTY_KEY) === '1'; } catch (e) { return false; }
+  })();
+
+  if (isDirty) {
+    if (!adminState.isSyncingCatalog) {
+      await syncToDisk(adminState.catalog);
+    }
+    return true;
+  }
+
+  if (adminState.hasMergedCloudOnce && !force) {
+    return true;
+  }
+
   try {
-    const cloudHealthRes = await fetch('/api/health');
+    const catRes = await fetch(`/api/catalog?_t=${Date.now()}`, { cache: 'no-store' });
+    if (!catRes.ok) return false;
+    const catData = await catRes.json();
+    if (!catData || !Array.isArray(catData.products) || catData.status === "fallback") {
+      return false;
+    }
+
+    adminState.hasMergedCloudOnce = true;
+
+    const cloudUpdatedAt = parseTimeMs(catData.updatedAt);
+    let localUpdatedAt = parseTimeMs(adminState.catalog && adminState.catalog.updatedAt);
+    try {
+      const storedTs = parseTimeMs(localStorage.getItem(CATALOG_UPDATED_KEY));
+      if (storedTs > localUpdatedAt) localUpdatedAt = storedTs;
+    } catch (e) {}
+
+    // Protect against Cloudflare KV 60s edge cache serving an older snapshot right after a save
+    if (localUpdatedAt > 0 && (Date.now() - localUpdatedAt) < 90000 && cloudUpdatedAt < localUpdatedAt) {
+      return true;
+    }
+
+    const deletedIds = Array.isArray(catData.deletedProductIds) ? Array.from(new Set(catData.deletedProductIds)) : [];
+    const deletedBrandIds = Array.isArray(catData.deletedBrandIds) ? Array.from(new Set(catData.deletedBrandIds)) : [];
+    const deletedCatIds = Array.isArray(catData.deletedCategoryIds) ? Array.from(new Set(catData.deletedCategoryIds)) : [];
+
+    const liveProducts = catData.products
+      .filter(p => p && p.id && !deletedIds.includes(p.id))
+      .map(p => {
+        const copy = { ...p, isSoldOut: Boolean(p.isSoldOut || p.soldOut) };
+        if ('soldOut' in copy) delete copy.soldOut;
+        return copy;
+      });
+
+    const defaultBrands = (typeof DEFAULT_CAR_BRANDS !== 'undefined' && Array.isArray(DEFAULT_CAR_BRANDS)) ? DEFAULT_CAR_BRANDS : [];
+    let liveBrands = (Array.isArray(catData.brands) && catData.brands.length > 0)
+      ? catData.brands.filter(b => b && b.id && !deletedBrandIds.includes(b.id))
+      : defaultBrands.filter(b => !deletedBrandIds.includes(b.id));
+    if (!liveBrands.some(b => b.id === 'all')) {
+      liveBrands.unshift({ id: "all", name: "ALL CARS", logo: "ALL" });
+    }
+
+    const defaultCats = (typeof DEFAULT_CATEGORIES !== 'undefined' && Array.isArray(DEFAULT_CATEGORIES)) ? DEFAULT_CATEGORIES : [];
+    let liveCats = (Array.isArray(catData.categories) && catData.categories.length > 0)
+      ? catData.categories.filter(c => c && c.id && !deletedCatIds.includes(c.id))
+      : defaultCats.filter(c => !deletedCatIds.includes(c.id));
+
+    adminState.catalog = {
+      brands: liveBrands,
+      categories: liveCats,
+      products: liveProducts,
+      deletedProductIds: deletedIds,
+      deletedBrandIds: deletedBrandIds,
+      deletedCategoryIds: deletedCatIds,
+      updatedAt: cloudUpdatedAt || Date.now()
+    };
+
+    saveCatalogData(adminState.catalog, { replaceTombstones: true });
+    populateBrandFilterDropdown();
+    renderAdminAccessoriesTable();
+    renderAdminCategories();
+    renderAdminBrands();
+    populateSalesFormOptions();
+    updateAdminCounters();
+    return true;
+  } catch (eCat) {
+    return false;
+  }
+}
+
+async function checkDiskSyncConnection(forceCatalogFetch = false) {
+  const isDirty = (() => {
+    try { return localStorage.getItem(CATALOG_DIRTY_KEY) === '1'; } catch (e) { return false; }
+  })();
+
+  try {
+    const cloudHealthRes = await fetch(`/api/health?_t=${Date.now()}`, { cache: 'no-store' });
     if (cloudHealthRes.ok) {
       const hData = await cloudHealthRes.json();
       if (hData && hData.status === 'ok') {
-        adminState.isCloudSyncConnected = true;
-        updateSyncStatusUI(true);
-
-        if (!adminState.hasMergedCloudOnce) {
-          adminState.hasMergedCloudOnce = true;
-          try {
-            const catRes = await fetch('/api/catalog');
-            if (catRes.ok) {
-              const catData = await catRes.json();
-              if (catData && Array.isArray(catData.products) && catData.status !== "fallback") {
-                let deletedIds = Array.isArray(adminState.catalog.deletedProductIds) ? [...adminState.catalog.deletedProductIds] : [];
-                if (Array.isArray(catData.deletedProductIds)) {
-                  deletedIds = Array.from(new Set([...deletedIds, ...catData.deletedProductIds]));
-                }
-                try {
-                  const loc = JSON.parse(localStorage.getItem('koko_catalog_deleted_ids') || '[]');
-                  deletedIds = Array.from(new Set([...deletedIds, ...loc]));
-                } catch (e) {}
-
-                let deletedBrandIds = Array.isArray(adminState.catalog.deletedBrandIds) ? [...adminState.catalog.deletedBrandIds] : [];
-                if (Array.isArray(catData.deletedBrandIds)) {
-                  deletedBrandIds = Array.from(new Set([...deletedBrandIds, ...catData.deletedBrandIds]));
-                }
-                try {
-                  const loc = JSON.parse(localStorage.getItem('koko_catalog_deleted_brands') || '[]');
-                  deletedBrandIds = Array.from(new Set([...deletedBrandIds, ...loc]));
-                } catch (e) {}
-
-                let deletedCatIds = Array.isArray(adminState.catalog.deletedCategoryIds) ? [...adminState.catalog.deletedCategoryIds] : [];
-                if (Array.isArray(catData.deletedCategoryIds)) {
-                  deletedCatIds = Array.from(new Set([...deletedCatIds, ...catData.deletedCategoryIds]));
-                }
-                try {
-                  const loc = JSON.parse(localStorage.getItem('koko_catalog_deleted_cats') || '[]');
-                  deletedCatIds = Array.from(new Set([...deletedCatIds, ...loc]));
-                } catch (e) {}
-
-                const liveProducts = catData.products.filter(p => p && p.id && !deletedIds.includes(p.id));
-
-                const defaultBrands = (typeof DEFAULT_CAR_BRANDS !== 'undefined' && Array.isArray(DEFAULT_CAR_BRANDS)) ? DEFAULT_CAR_BRANDS : [];
-                let liveBrands = (Array.isArray(catData.brands) && catData.brands.length > 0)
-                  ? catData.brands.filter(b => b && b.id && !deletedBrandIds.includes(b.id))
-                  : defaultBrands.filter(b => !deletedBrandIds.includes(b.id));
-                if (!liveBrands.some(b => b.id === 'all')) {
-                  liveBrands.unshift({ id: "all", name: "ALL CARS", logo: "ALL" });
-                }
-
-                const defaultCats = (typeof DEFAULT_CATEGORIES !== 'undefined' && Array.isArray(DEFAULT_CATEGORIES)) ? DEFAULT_CATEGORIES : [];
-                let liveCats = (Array.isArray(catData.categories) && catData.categories.length > 0)
-                  ? catData.categories.filter(c => c && c.id && !deletedCatIds.includes(c.id))
-                  : defaultCats.filter(c => !deletedCatIds.includes(c.id));
-
-                adminState.catalog = {
-                  brands: liveBrands,
-                  categories: liveCats,
-                  products: liveProducts,
-                  deletedProductIds: deletedIds,
-                  deletedBrandIds: deletedBrandIds,
-                  deletedCategoryIds: deletedCatIds
-                };
-                saveCatalogData(adminState.catalog);
-                renderAdminAccessoriesTable();
-                renderAdminCategories();
-                renderAdminBrands();
-                populateSalesFormOptions();
-                updateAdminCounters();
-              }
-            }
-          } catch (eCat) {}
+        if (hData.autoSave && !hData.cloudDatabase) {
+          adminState.isDiskSyncConnected = true;
+        } else {
+          adminState.isCloudSyncConnected = true;
         }
-        if (!adminState.hasLoadedCloudSalesOnce) {
-          adminState.hasLoadedCloudSalesOnce = true;
-          loadSalesFromCloud();
+        if (!adminState.isSyncingCatalog) {
+          updateSyncStatusUI(isDirty ? 'error' : 'live');
+        }
+
+        if (adminState.isCloudSyncConnected) {
+          await fetchCloudCatalog(forceCatalogFetch);
+          if (!adminState.hasLoadedCloudSalesOnce) {
+            adminState.hasLoadedCloudSalesOnce = true;
+            loadSalesFromCloud();
+          }
         }
         return true;
       }
@@ -288,23 +357,54 @@ async function checkDiskSyncConnection() {
   } catch (eCloud) {}
 
   try {
-    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    if ((window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && window.location.port === '5500') {
       const res = await fetch('http://localhost:5500/api/health', { cache: 'no-cache' });
       if (res.ok) {
         adminState.isDiskSyncConnected = true;
-        updateSyncStatusUI(true);
+        if (!adminState.isSyncingCatalog) {
+          updateSyncStatusUI(isDirty ? 'error' : 'live');
+        }
         return true;
       }
     }
   } catch (e) {}
 
-  updateSyncStatusUI(false);
+  if (!adminState.isSyncingCatalog) {
+    updateSyncStatusUI(isDirty ? 'error' : false);
+  }
   return false;
 }
 
-function updateSyncStatusUI(isConnected) {
+window.forceSyncFromCloud = async function() {
+  const isDirty = (() => {
+    try { return localStorage.getItem(CATALOG_DIRTY_KEY) === '1'; } catch (e) { return false; }
+  })();
+  if (isDirty) {
+    const ok = await syncToDisk(adminState.catalog);
+    showToast(ok ? "✓ Pending changes synced to Cloud!" : "⚠ Cloud sync still failing — check internet connection");
+  } else {
+    showToast("Refreshing from Cloud...");
+    const ok = await fetchCloudCatalog(true);
+    await loadSalesFromCloud(true);
+    showToast(ok ? "✓ Synced latest catalog from Cloud" : "⚠ Could not reach Cloud server");
+  }
+};
+
+function updateSyncStatusUI(status) {
   if (!adminEl.syncStatusBadge) return;
-  const label = isConnected ? 'CLOUD AUTO-SAVE LIVE' : 'CLOUD CONNECTED';
+  adminEl.syncStatusBadge.classList.remove('sync-error', 'syncing');
+
+  let label = 'OFFLINE (LOCAL)';
+  if (status === 'saving') {
+    adminEl.syncStatusBadge.classList.add('syncing');
+    label = 'SAVING TO CLOUD...';
+  } else if (status === 'error') {
+    adminEl.syncStatusBadge.classList.add('sync-error');
+    label = 'SYNC RETRY NEEDED';
+  } else if (status === 'live' || status === true) {
+    label = 'CLOUD AUTO-SAVE LIVE';
+  }
+
   adminEl.syncStatusBadge.innerHTML = `
     <span class="cloud-dot"></span>
     <span class="cloud-text">${label}</span>
@@ -312,39 +412,97 @@ function updateSyncStatusUI(isConnected) {
 }
 
 async function syncToDisk(catalogData) {
-  saveCatalogData(catalogData);
-  let saved = false;
+  if (!catalogData || typeof catalogData !== 'object') return false;
+  adminState.isSyncingCatalog = true;
 
-  try {
+  let prevTs = 0;
+  try { prevTs = Number(localStorage.getItem(CATALOG_UPDATED_KEY) || 0) || 0; } catch (e) {}
+  const nextTs = Math.max(Date.now(), prevTs + 1);
+  catalogData.updatedAt = nextTs;
+
+  if (Array.isArray(catalogData.products)) {
+    catalogData.products.forEach(p => {
+      if (p && typeof p === 'object') {
+        p.isSoldOut = Boolean(p.isSoldOut || p.soldOut);
+        if ('soldOut' in p) delete p.soldOut;
+      }
+    });
+  }
+
+  try { localStorage.setItem(CATALOG_DIRTY_KEY, '1'); } catch (e) {}
+  try { localStorage.setItem(CATALOG_UPDATED_KEY, String(nextTs)); } catch (e) {}
+  saveCatalogData(catalogData);
+  updateSyncStatusUI('saving');
+
+  let saved = false;
+  const payloadStr = JSON.stringify(catalogData);
+
+  const tryPostCloud = async () => {
     const cloudRes = await fetch('/api/catalog', {
       method: 'POST',
+      cache: 'no-store',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(catalogData)
+      body: payloadStr
     });
-    if (cloudRes.ok) {
-      updateSyncStatusUI(true);
-      saved = true;
+    if (!cloudRes.ok) {
+      throw new Error(`HTTP ${cloudRes.status}`);
     }
-  } catch (errCloud) {}
+    return cloudRes.json();
+  };
 
   try {
-    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    let resData = null;
+    try {
+      resData = await tryPostCloud();
+    } catch (firstErr) {
+      await new Promise(r => setTimeout(r, 800));
+      resData = await tryPostCloud();
+    }
+
+    if (resData && resData.catalog && Array.isArray(resData.catalog.products)) {
+      adminState.catalog = resData.catalog;
+    } else if (resData && resData.updatedAt) {
+      adminState.catalog.updatedAt = resData.updatedAt;
+    }
+
+    const finalTs = (adminState.catalog && adminState.catalog.updatedAt) || (resData && resData.updatedAt) || nextTs;
+    try {
+      localStorage.setItem(CATALOG_DIRTY_KEY, '0');
+      localStorage.setItem(CATALOG_UPDATED_KEY, String(finalTs));
+    } catch (e) {}
+    saveCatalogData(adminState.catalog, { replaceTombstones: true });
+    saved = true;
+  } catch (errCloud) {
+    console.warn("Cloud catalog POST failed:", errCloud);
+  }
+
+  // Optional local dev server mirror (when running server.py on localhost:5500)
+  try {
+    if (!adminState.isCloudSyncConnected && (adminState.isDiskSyncConnected || window.location.port === '5500')) {
       const res = await fetch('http://localhost:5500/api/save', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(catalogData)
+        body: payloadStr
       });
       if (res.ok) {
         const result = await res.json();
-        if (result.products) {
+        if (!saved && result.products) {
           adminState.catalog.products = result.products;
-          saveCatalogData(adminState.catalog);
+        }
+        if (!saved) {
+          try {
+            localStorage.setItem(CATALOG_DIRTY_KEY, '0');
+            localStorage.setItem(CATALOG_UPDATED_KEY, String(nextTs));
+          } catch (e) {}
+          saveCatalogData(adminState.catalog, { replaceTombstones: true });
         }
         saved = true;
       }
     }
   } catch (errLocal) {}
 
+  adminState.isSyncingCatalog = false;
+  updateSyncStatusUI(saved ? 'live' : 'error');
   return saved;
 }
 
@@ -379,7 +537,9 @@ function showDashboard() {
   adminEl.loginGate.classList.add('hidden');
   adminEl.adminDashboard.classList.remove('hidden');
 
-  adminState.catalog = getSafeCatalog();
+  if (!adminState.hasMergedCloudOnce) {
+    adminState.catalog = getSafeCatalog();
+  }
   loadLocalSales();
   populateBrandFilterDropdown();
   populateSalesFormOptions();
@@ -390,7 +550,8 @@ function showDashboard() {
   if (adminState.currentTab === 'sales') {
     renderSalesDashboard();
   }
-  checkDiskSyncConnection();
+  checkDiskSyncConnection(true);
+  loadSalesFromCloud(true);
 }
 
 window.switchAdminTab = function(tabName) {
@@ -588,7 +749,12 @@ window.toggleSoldOutStatus = async function(id) {
 
   item.isSoldOut = !item.isSoldOut;
   renderAdminAccessoriesTable();
-  await syncToDisk(adminState.catalog);
+  const synced = await syncToDisk(adminState.catalog);
+  renderAdminAccessoriesTable();
+  if (!synced) {
+    showToast(`⚠ Changed locally ONLY — Cloud sync failed, retrying...`);
+    return;
+  }
   showToast(item.isSoldOut
     ? `🔴 "${item.name}" MARKED SOLD OUT`
     : `🟢 "${item.name}" RETURNED TO IN STOCK`
@@ -758,26 +924,97 @@ window.handleFileSelect = function(e) {
   }
 };
 
-function processMultipleImageFiles(fileList) {
+async function compressImageFile(file, maxDim = 1000, quality = 0.8) {
+  return new Promise((resolve, reject) => {
+    const readOriginal = () => {
+      const reader = new FileReader();
+      reader.onload = ev => resolve(ev.target.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    };
+
+    try {
+      const objUrl = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => {
+        try {
+          let w = img.naturalWidth || img.width;
+          let h = img.naturalHeight || img.height;
+          if (!w || !h) {
+            URL.revokeObjectURL(objUrl);
+            readOriginal();
+            return;
+          }
+          if (w <= maxDim && h <= maxDim && file.size <= 150 * 1024) {
+            URL.revokeObjectURL(objUrl);
+            readOriginal();
+            return;
+          }
+          if (w > maxDim || h > maxDim) {
+            const scale = Math.min(maxDim / w, maxDim / h);
+            w = Math.max(1, Math.round(w * scale));
+            h = Math.max(1, Math.round(h * scale));
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            URL.revokeObjectURL(objUrl);
+            readOriginal();
+            return;
+          }
+          ctx.fillStyle = '#FFFFFF';
+          ctx.fillRect(0, 0, w, h);
+          ctx.drawImage(img, 0, 0, w, h);
+          let compressed = canvas.toDataURL('image/jpeg', quality);
+          if (compressed && compressed.length > 350000 && quality > 0.52) {
+            compressed = canvas.toDataURL('image/jpeg', 0.52);
+          }
+          URL.revokeObjectURL(objUrl);
+          if (compressed && compressed.startsWith('data:image/')) {
+            resolve(compressed);
+          } else {
+            readOriginal();
+          }
+        } catch (errCanvas) {
+          URL.revokeObjectURL(objUrl);
+          readOriginal();
+        }
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(objUrl);
+        readOriginal();
+      };
+      img.src = objUrl;
+    } catch (e) {
+      readOriginal();
+    }
+  });
+}
+
+async function processMultipleImageFiles(fileList) {
   const imageFiles = fileList.filter(f => f.type.startsWith('image/'));
   if (imageFiles.length === 0) {
     alert("Please select or drop valid image files (JPG, PNG, WebP).");
     return;
   }
 
-  let loadedCount = 0;
-  imageFiles.forEach(file => {
-    const reader = new FileReader();
-    reader.onload = function(event) {
-      adminState.activePhotos.push(event.target.result);
-      loadedCount++;
-      if (loadedCount === imageFiles.length) {
-        renderPhotosGallery();
-        showToast(`Loaded ${imageFiles.length} photo(s)!`);
+  showToast(`Compressing ${imageFiles.length} photo(s)...`);
+  let added = 0;
+  for (const file of imageFiles) {
+    try {
+      const dataUrl = await compressImageFile(file, 1000, 0.8);
+      if (dataUrl) {
+        adminState.activePhotos.push(dataUrl);
+        added++;
       }
-    };
-    reader.readAsDataURL(file);
-  });
+    } catch (e) {
+      console.error("Failed reading image file:", e);
+    }
+  }
+  renderPhotosGallery();
+  showToast(`✓ Loaded ${added} compressed photo(s)!`);
 }
 
 window.handleSaveAccessory = async function(e) {
@@ -795,53 +1032,69 @@ window.handleSaveAccessory = async function(e) {
     return;
   }
 
-  const primaryPhoto = adminState.activePhotos[0];
-  const allPhotos = [...adminState.activePhotos];
-
-  let savedProdId = null;
-  if (adminState.editingAccessoryId) {
-    const item = adminState.catalog.products.find(p => p.id === adminState.editingAccessoryId);
-    if (item) {
-      item.name = name;
-      item.brand = brand;
-      item.category = category;
-      item.fitment = fitment;
-      item.description = desc;
-      item.isSoldOut = isSoldOut;
-      item.image = primaryPhoto;
-      item.images = allPhotos;
-      savedProdId = item.id;
-    }
-  } else {
-    const newId = `${brand}-${Date.now().toString(36)}`;
-    adminState.catalog.products.unshift({
-      id: newId,
-      name, brand, category, fitment,
-      description: desc,
-      isSoldOut,
-      image: primaryPhoto,
-      images: allPhotos
-    });
-    savedProdId = newId;
+  const saveBtn = document.getElementById('saveAccessoryBtn');
+  const prevBtnTxt = saveBtn ? saveBtn.textContent : 'SAVE ACCESSORY';
+  if (saveBtn) {
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'SAVING...';
   }
 
-  // Untombstone if previously deleted
-  if (savedProdId) {
-    if (Array.isArray(adminState.catalog.deletedProductIds)) {
-      adminState.catalog.deletedProductIds = adminState.catalog.deletedProductIds.filter(x => x !== savedProdId);
-    }
-    try {
-      const curDel = JSON.parse(localStorage.getItem('koko_catalog_deleted_ids') || '[]');
-      const filteredDel = curDel.filter(x => x !== savedProdId);
-      localStorage.setItem('koko_catalog_deleted_ids', JSON.stringify(filteredDel));
-    } catch (e) {}
-  }
+  try {
+    const primaryPhoto = adminState.activePhotos[0];
+    const allPhotos = [...adminState.activePhotos];
 
-  const cloudSynced = await syncToDisk(adminState.catalog);
-  renderAdminAccessoriesTable();
-  updateAdminCounters();
-  closeAccessoryModal();
-  showToast(cloudSynced ? "✓ SAVED & PUBLISHED LIVE!" : `✓ SAVED ${allPhotos.length} PHOTO(S)!`);
+    let savedProdId = null;
+    if (adminState.editingAccessoryId) {
+      const item = adminState.catalog.products.find(p => p.id === adminState.editingAccessoryId);
+      if (item) {
+        item.name = name;
+        item.brand = brand;
+        item.category = category;
+        item.fitment = fitment;
+        item.description = desc;
+        item.isSoldOut = isSoldOut;
+        if ('soldOut' in item) delete item.soldOut;
+        item.image = primaryPhoto;
+        item.images = allPhotos;
+        savedProdId = item.id;
+      }
+    } else {
+      const newId = `${brand}-${Date.now().toString(36)}`;
+      adminState.catalog.products.unshift({
+        id: newId,
+        name, brand, category, fitment,
+        description: desc,
+        isSoldOut,
+        image: primaryPhoto,
+        images: allPhotos
+      });
+      savedProdId = newId;
+    }
+
+    // Untombstone if previously deleted
+    if (savedProdId) {
+      if (Array.isArray(adminState.catalog.deletedProductIds)) {
+        adminState.catalog.deletedProductIds = adminState.catalog.deletedProductIds.filter(x => x !== savedProdId);
+      }
+      try {
+        const curDel = JSON.parse(localStorage.getItem('koko_catalog_deleted_ids') || '[]');
+        const filteredDel = curDel.filter(x => x !== savedProdId);
+        localStorage.setItem('koko_catalog_deleted_ids', JSON.stringify(filteredDel));
+      } catch (e) {}
+    }
+
+    const cloudSynced = await syncToDisk(adminState.catalog);
+    renderAdminAccessoriesTable();
+    populateSalesFormOptions();
+    updateAdminCounters();
+    closeAccessoryModal();
+    showToast(cloudSynced ? "✓ SAVED & PUBLISHED LIVE!" : "⚠ Saved locally ONLY — Cloud sync failed, retrying...");
+  } finally {
+    if (saveBtn) {
+      saveBtn.disabled = false;
+      saveBtn.textContent = prevBtnTxt;
+    }
+  }
 };
 
 window.handleDeleteAccessory = async function(id) {
@@ -866,8 +1119,9 @@ window.handleDeleteAccessory = async function(id) {
 
     const cloudSynced = await syncToDisk(adminState.catalog);
     renderAdminAccessoriesTable();
+    populateSalesFormOptions();
     updateAdminCounters();
-    showToast(cloudSynced ? "✓ Deleted & Saved to Cloud" : "✓ Deleted locally");
+    showToast(cloudSynced ? "✓ Deleted & Saved to Cloud" : "⚠ Deleted locally ONLY — Cloud sync failed, retrying...");
   }
 };
 
@@ -913,11 +1167,11 @@ window.handleAddNewCategory = async function() {
   } catch (e) {}
 
   adminState.catalog.categories.push({ id, name: name.toUpperCase() });
-  await syncToDisk(adminState.catalog);
+  const synced = await syncToDisk(adminState.catalog);
   adminEl.newCategoryInput.value = '';
   renderAdminCategories();
   updateAdminCounters();
-  showToast("Added Category & Saved to Cloud");
+  showToast(synced ? "Added Category & Saved to Cloud" : "⚠ Added locally ONLY — Cloud sync failed, retrying...");
 };
 
 window.handleDeleteCategory = async function(catId) {
@@ -937,10 +1191,10 @@ window.handleDeleteCategory = async function(catId) {
       }
     } catch (e) {}
 
-    await syncToDisk(adminState.catalog);
+    const synced = await syncToDisk(adminState.catalog);
     renderAdminCategories();
     updateAdminCounters();
-    showToast("Category removed & Saved to Cloud");
+    showToast(synced ? "Category removed & Saved to Cloud" : "⚠ Removed locally ONLY — Cloud sync failed, retrying...");
   }
 };
 
@@ -983,13 +1237,13 @@ window.handleAddNewBrand = async function() {
   } catch (e) {}
 
   adminState.catalog.brands.push({ id, name: name.toUpperCase(), logo: name.toUpperCase() });
-  await syncToDisk(adminState.catalog);
+  const synced = await syncToDisk(adminState.catalog);
   adminEl.newBrandInput.value = '';
   renderAdminBrands();
   populateBrandFilterDropdown();
   populateSalesFormOptions();
   updateAdminCounters();
-  showToast("Added Car Brand & Saved to Cloud");
+  showToast(synced ? "Added Car Brand & Saved to Cloud" : "⚠ Added locally ONLY — Cloud sync failed, retrying...");
 };
 
 window.handleDeleteBrand = async function(brandId) {
@@ -1009,12 +1263,12 @@ window.handleDeleteBrand = async function(brandId) {
       }
     } catch (e) {}
 
-    await syncToDisk(adminState.catalog);
+    const synced = await syncToDisk(adminState.catalog);
     renderAdminBrands();
     populateBrandFilterDropdown();
     populateSalesFormOptions();
     updateAdminCounters();
-    showToast("Car brand removed & Saved to Cloud");
+    showToast(synced ? "Car brand removed & Saved to Cloud" : "⚠ Removed locally ONLY — Cloud sync failed, retrying...");
   }
 };
 
@@ -1034,24 +1288,54 @@ const DEFAULT_CATEGORIES = ${JSON.stringify(adminState.catalog.categories, null,
 const DEFAULT_PRODUCTS = ${JSON.stringify(adminState.catalog.products, null, 2)};
 
 function getCatalogData() {
+  let deletedIds = [];
+  let deletedBrands = [];
+  let deletedCats = [];
+  let fallbackUpdatedAt = 0;
+  try { deletedIds = JSON.parse(localStorage.getItem('koko_catalog_deleted_ids') || '[]'); } catch (e) {}
+  try { deletedBrands = JSON.parse(localStorage.getItem('koko_catalog_deleted_brands') || '[]'); } catch (e) {}
+  try { deletedCats = JSON.parse(localStorage.getItem('koko_catalog_deleted_cats') || '[]'); } catch (e) {}
+  try { fallbackUpdatedAt = Number(localStorage.getItem('koko_catalog_updated_at') || 0) || 0; } catch (e) {}
   try {
     const saved = localStorage.getItem('koko_catalog_data');
-    if (saved) return JSON.parse(saved);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (parsed && Array.isArray(parsed.products)) {
+        return {
+          brands: (parsed.brands || DEFAULT_CAR_BRANDS).filter(b => b && b.id && !deletedBrands.includes(b.id)),
+          categories: (parsed.categories || DEFAULT_CATEGORIES).filter(c => c && c.id && !deletedCats.includes(c.id)),
+          products: parsed.products.filter(p => p && p.id && !deletedIds.includes(p.id)).map(p => ({ ...p, isSoldOut: Boolean(p.isSoldOut || p.soldOut) })),
+          deletedProductIds: deletedIds,
+          deletedBrandIds: deletedBrands,
+          deletedCategoryIds: deletedCats,
+          updatedAt: Number(parsed.updatedAt || fallbackUpdatedAt || 0) || 0
+        };
+      }
+    }
   } catch (e) {
     console.error("Error reading localStorage:", e);
   }
   return {
-    brands: DEFAULT_CAR_BRANDS,
-    categories: DEFAULT_CATEGORIES,
-    products: DEFAULT_PRODUCTS
+    brands: DEFAULT_CAR_BRANDS.filter(b => !deletedBrands.includes(b.id)),
+    categories: DEFAULT_CATEGORIES.filter(c => !deletedCats.includes(c.id)),
+    products: DEFAULT_PRODUCTS.filter(p => !deletedIds.includes(p.id)).map(p => ({ ...p, isSoldOut: Boolean(p.isSoldOut || p.soldOut) })),
+    deletedProductIds: deletedIds,
+    deletedBrandIds: deletedBrands,
+    deletedCategoryIds: deletedCats,
+    updatedAt: fallbackUpdatedAt
   };
 }
 
 function saveCatalogData(data) {
   try {
+    if (data && data.updatedAt) {
+      localStorage.setItem('koko_catalog_updated_at', String(data.updatedAt));
+    }
     localStorage.setItem('koko_catalog_data', JSON.stringify(data));
+    return true;
   } catch (e) {
     console.error("Error saving to localStorage:", e);
+    return false;
   }
 }
 `;
@@ -1071,6 +1355,7 @@ window.handleResetToDefaultData = async function() {
     localStorage.removeItem('koko_catalog_deleted_ids');
     localStorage.removeItem('koko_catalog_deleted_brands');
     localStorage.removeItem('koko_catalog_deleted_cats');
+    localStorage.removeItem(CATALOG_UPDATED_KEY);
     const defBrands = (typeof DEFAULT_CAR_BRANDS !== 'undefined' && Array.isArray(DEFAULT_CAR_BRANDS)) ? JSON.parse(JSON.stringify(DEFAULT_CAR_BRANDS)) : [];
     const defCats = (typeof DEFAULT_CATEGORIES !== 'undefined' && Array.isArray(DEFAULT_CATEGORIES)) ? JSON.parse(JSON.stringify(DEFAULT_CATEGORIES)) : [];
     const defProds = (typeof DEFAULT_PRODUCTS !== 'undefined' && Array.isArray(DEFAULT_PRODUCTS)) ? JSON.parse(JSON.stringify(DEFAULT_PRODUCTS)) : [];
@@ -1082,13 +1367,14 @@ window.handleResetToDefaultData = async function() {
       deletedBrandIds: [],
       deletedCategoryIds: []
     };
-    await syncToDisk(adminState.catalog);
+    const synced = await syncToDisk(adminState.catalog);
     populateBrandFilterDropdown();
     renderAdminAccessoriesTable();
     renderAdminCategories();
     renderAdminBrands();
+    populateSalesFormOptions();
     updateAdminCounters();
-    showToast("Reset to default catalog & Saved");
+    showToast(synced ? "Reset to default catalog & Saved to Cloud" : "⚠ Reset locally ONLY — Cloud sync failed, retrying...");
   }
 };
 
@@ -1106,6 +1392,8 @@ function showToast(msg) {
 // ============================================================
 const SALES_STORAGE_KEY = 'koko_sales_ledger_v1';
 const SALES_DIRTY_KEY = 'koko_sales_dirty';
+const SALES_UPDATED_KEY = 'koko_sales_updated_at';
+const SALES_DELETED_KEY = 'koko_sales_deleted_ids';
 
 function fmtEGP(num) {
   return Math.round(Number(num) || 0).toLocaleString('en-US') + ' EGP';
@@ -1159,23 +1447,43 @@ function loadLocalSales() {
 }
 
 async function syncSalesToCloud() {
+  let prevTs = 0;
+  try { prevTs = parseTimeMs(localStorage.getItem(SALES_UPDATED_KEY)); } catch (e) {}
+  const nextTs = Math.max(Date.now(), prevTs + 1);
+  try { localStorage.setItem(SALES_UPDATED_KEY, String(nextTs)); } catch (e) {}
   saveLocalSales(true);
-  const payload = JSON.stringify({ sales: adminState.sales || [] });
-  let synced = false;
 
-  try {
+  const payload = JSON.stringify({ sales: adminState.sales || [], updatedAt: nextTs });
+  let synced = false;
+  let serverTs = nextTs;
+
+  const postCloudSales = async () => {
     const res = await fetch('/api/sales', {
       method: 'POST',
+      cache: 'no-store',
       headers: { 'Content-Type': 'application/json' },
       body: payload
     });
-    if (res.ok) {
-      synced = true;
-      updateSyncStatusUI(true);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
+  };
+
+  try {
+    let resData = null;
+    try {
+      resData = await postCloudSales();
+    } catch (firstErr) {
+      await new Promise(r => setTimeout(r, 800));
+      resData = await postCloudSales();
     }
+    if (resData && resData.updatedAt) {
+      serverTs = parseTimeMs(resData.updatedAt) || nextTs;
+    }
+    synced = true;
+    updateSyncStatusUI('live');
   } catch (eCloud) {}
 
-  if (!synced && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+  if (!synced && !adminState.isCloudSyncConnected && (adminState.isDiskSyncConnected || window.location.port === '5500')) {
     try {
       const localRes = await fetch('http://localhost:5500/api/sales', {
         method: 'POST',
@@ -1187,33 +1495,52 @@ async function syncSalesToCloud() {
   }
 
   if (synced) {
+    try {
+      localStorage.setItem(SALES_UPDATED_KEY, String(serverTs));
+      localStorage.removeItem(SALES_DELETED_KEY);
+    } catch (e) {}
     saveLocalSales(false);
   }
   return synced;
 }
 
-async function loadSalesFromCloud() {
+async function loadSalesFromCloud(force = false) {
   try {
-    const res = await fetch('/api/sales', { cache: 'no-store' });
+    const res = await fetch(`/api/sales?_t=${Date.now()}`, { cache: 'no-store' });
     if (!res.ok) return;
     const data = await res.json();
     if (!data || !Array.isArray(data.sales)) return;
 
     const isDirty = localStorage.getItem(SALES_DIRTY_KEY) === '1';
     const localList = Array.isArray(adminState.sales) ? adminState.sales : [];
+    const cloudUpdatedAt = parseTimeMs(data.updatedAt);
+    let localUpdatedAt = 0;
+    try { localUpdatedAt = parseTimeMs(localStorage.getItem(SALES_UPDATED_KEY)); } catch (e) {}
 
     if (isDirty) {
+      let deletedSaleIds = [];
+      try { deletedSaleIds = JSON.parse(localStorage.getItem(SALES_DELETED_KEY) || '[]'); } catch (e) {}
       const mergedMap = new Map();
-      data.sales.forEach(s => { if (s && s.id) mergedMap.set(s.id, s); });
-      localList.forEach(s => { if (s && s.id) mergedMap.set(s.id, s); });
+      data.sales.forEach(s => {
+        if (s && s.id && !deletedSaleIds.includes(s.id)) mergedMap.set(s.id, s);
+      });
+      localList.forEach(s => {
+        if (s && s.id && !deletedSaleIds.includes(s.id)) mergedMap.set(s.id, s);
+      });
       adminState.sales = Array.from(mergedMap.values());
       saveLocalSales(true);
       await syncSalesToCloud();
+    } else if (localUpdatedAt > 0 && (Date.now() - localUpdatedAt) < 90000 && cloudUpdatedAt < localUpdatedAt) {
+      return;
     } else if (data.sales.length === 0 && localList.length > 0 && data.status === 'empty') {
       // Initial migration if KV has not yet received local entries
       await syncSalesToCloud();
     } else {
       adminState.sales = data.sales;
+      try {
+        if (cloudUpdatedAt > 0) localStorage.setItem(SALES_UPDATED_KEY, String(cloudUpdatedAt));
+        localStorage.removeItem(SALES_DELETED_KEY);
+      } catch (e) {}
       saveLocalSales(false);
     }
 
@@ -1586,33 +1913,53 @@ window.updateLiveProfitPreview = function() {
 
 window.handleSaveSale = async function(e) {
   e.preventDefault();
-  const editId = document.getElementById('saleEditId').value || adminState.editingSaleId;
-  const entry = {
-    id: editId || ('sale_' + Date.now().toString(36)),
-    date: document.getElementById('saleDate').value || getTodayISO(),
-    payment: document.getElementById('salePayment').value || 'Cash',
-    itemName: document.getElementById('saleItemName').value.trim(),
-    brand: document.getElementById('saleBrand').value || 'other',
-    qty: Math.max(1, Number(document.getElementById('saleQty').value) || 1),
-    buyPrice: Number(document.getElementById('saleBuyPrice').value) || 0,
-    sellPrice: Number(document.getElementById('saleSellPrice').value) || 0,
-    note: document.getElementById('saleNote').value.trim(),
-    updatedAt: new Date().toISOString()
-  };
-
-  if (editId) {
-    const idx = adminState.sales.findIndex(x => x.id === editId);
-    if (idx >= 0) adminState.sales[idx] = entry;
-    else adminState.sales.unshift(entry);
-  } else {
-    adminState.sales.unshift(entry);
+  const submitBtn = document.getElementById('saleSubmitBtn');
+  const prevBtnTxt = submitBtn ? submitBtn.textContent : 'SAVE SALE TO DASHBOARD';
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'SAVING...';
   }
 
-  closeSaleModal();
-  renderSalesDashboard();
-  const synced = await syncSalesToCloud();
-  const net = (entry.sellPrice - entry.buyPrice) * entry.qty;
-  showToast(synced ? `✓ Sale Synced! Profit: ${fmtSignedEGP(net)}` : `✓ Sale Saved Locally! Profit: ${fmtSignedEGP(net)}`);
+  try {
+    const editId = document.getElementById('saleEditId').value || adminState.editingSaleId;
+    const entryId = editId || ('sale_' + Date.now().toString(36));
+    const entry = {
+      id: entryId,
+      date: document.getElementById('saleDate').value || getTodayISO(),
+      payment: document.getElementById('salePayment').value || 'Cash',
+      itemName: document.getElementById('saleItemName').value.trim(),
+      brand: document.getElementById('saleBrand').value || 'other',
+      qty: Math.max(1, Number(document.getElementById('saleQty').value) || 1),
+      buyPrice: Number(document.getElementById('saleBuyPrice').value) || 0,
+      sellPrice: Number(document.getElementById('saleSellPrice').value) || 0,
+      note: document.getElementById('saleNote').value.trim(),
+      updatedAt: new Date().toISOString()
+    };
+
+    if (editId) {
+      const idx = adminState.sales.findIndex(x => x.id === editId);
+      if (idx >= 0) adminState.sales[idx] = entry;
+      else adminState.sales.unshift(entry);
+    } else {
+      adminState.sales.unshift(entry);
+    }
+
+    try {
+      const delIds = JSON.parse(localStorage.getItem(SALES_DELETED_KEY) || '[]');
+      localStorage.setItem(SALES_DELETED_KEY, JSON.stringify(delIds.filter(x => x !== entryId)));
+    } catch (eDel) {}
+
+    closeSaleModal();
+    renderSalesDashboard();
+    const synced = await syncSalesToCloud();
+    const net = (entry.sellPrice - entry.buyPrice) * entry.qty;
+    showToast(synced ? `✓ Sale Synced! Profit: ${fmtSignedEGP(net)}` : `⚠ Sale Saved Locally ONLY! Profit: ${fmtSignedEGP(net)}`);
+  } finally {
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = prevBtnTxt;
+    }
+  }
 };
 
 window.deleteSale = async function(id) {
@@ -1621,9 +1968,16 @@ window.deleteSale = async function(id) {
   if (!confirm(`Delete sale entry "${target.itemName}"?`)) return;
 
   adminState.sales = adminState.sales.filter(s => s.id !== id);
+  try {
+    const delIds = JSON.parse(localStorage.getItem(SALES_DELETED_KEY) || '[]');
+    if (!delIds.includes(id)) {
+      delIds.push(id);
+      localStorage.setItem(SALES_DELETED_KEY, JSON.stringify(delIds));
+    }
+  } catch (eDel) {}
   renderSalesDashboard();
   const synced = await syncSalesToCloud();
-  showToast(synced ? '✓ Entry removed & cloud synced' : 'Entry removed');
+  showToast(synced ? '✓ Entry removed & cloud synced' : '⚠ Entry removed locally ONLY — Cloud sync failed');
 };
 
 window.exportSalesCSV = function() {

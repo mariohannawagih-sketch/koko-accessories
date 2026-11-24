@@ -460,45 +460,47 @@ html:not(.dark) .hero-bg-vignette {
 }
 
 /* ============================================================
-   FULL ARABIC RTL MIRRORING COMPATIBILITY
+   FULL ARABIC RTL MIRRORING COMPATIBILITY (DESKTOP / TABLET >= 768px)
    ============================================================ */
-html[dir="rtl"] .hero-bg-car {
-  left: 0 !important;
-  right: auto !important;
-  width: 66% !important;
-  transform: scaleX(-1) !important;
-  background-position: center 48% !important;
-}
-html[dir="rtl"] .hero-bg-german-flag {
-  left: 18% !important;
-  right: auto !important;
-  transform: rotate(18deg) !important;
-  opacity: 0.35 !important;
-}
-html[dir="rtl"] .hero-bg-flag-glow {
-  background: 
-    radial-gradient(ellipse 52% 46% at 24% 40%, rgba(200, 30, 30, 0.22), transparent 70%),
-    radial-gradient(ellipse 44% 40% at 12% 68%, rgba(212, 155, 0, 0.19), transparent 70%) !important;
-}
-html[dir="rtl"] .hero-bg-vignette {
-  background: linear-gradient(
-    to left,
-    var(--bg-surface) 0%,
-    var(--bg-surface) 42%,
-    rgba(24, 26, 31, 0.85) 55%,
-    rgba(24, 26, 31, 0.18) 75%,
-    rgba(24, 26, 31, 0.45) 100%
-  ) !important;
-}
-html:not(.dark)[dir="rtl"] .hero-bg-vignette {
-  background: linear-gradient(
-    to left,
-    #F6F7F9 0%,
-    #F6F7F9 36%,
-    rgba(246, 247, 249, 0.88) 52%,
-    rgba(246, 247, 249, 0.14) 72%,
-    rgba(246, 247, 249, 0.35) 100%
-  ) !important;
+@media (min-width: 768px) {
+  html[dir="rtl"] .hero-bg-car {
+    left: 0 !important;
+    right: auto !important;
+    width: 66% !important;
+    transform: scaleX(-1) !important;
+    background-position: center 48% !important;
+  }
+  html[dir="rtl"] .hero-bg-german-flag {
+    left: 18% !important;
+    right: auto !important;
+    transform: rotate(18deg) !important;
+    opacity: 0.35 !important;
+  }
+  html[dir="rtl"] .hero-bg-flag-glow {
+    background: 
+      radial-gradient(ellipse 52% 46% at 24% 40%, rgba(200, 30, 30, 0.22), transparent 70%),
+      radial-gradient(ellipse 44% 40% at 12% 68%, rgba(212, 155, 0, 0.19), transparent 70%) !important;
+  }
+  html[dir="rtl"] .hero-bg-vignette {
+    background: linear-gradient(
+      to left,
+      var(--bg-surface) 0%,
+      var(--bg-surface) 42%,
+      rgba(24, 26, 31, 0.85) 55%,
+      rgba(24, 26, 31, 0.18) 75%,
+      rgba(24, 26, 31, 0.45) 100%
+    ) !important;
+  }
+  html:not(.dark)[dir="rtl"] .hero-bg-vignette {
+    background: linear-gradient(
+      to left,
+      #F6F7F9 0%,
+      #F6F7F9 36%,
+      rgba(246, 247, 249, 0.88) 52%,
+      rgba(246, 247, 249, 0.14) 72%,
+      rgba(246, 247, 249, 0.35) 100%
+    ) !important;
+  }
 }
 
 .hero-grid {
@@ -751,7 +753,7 @@ html:not(.dark) .hero-part-badge-name {
   border-radius: 14px;
   padding: 11px 14px;
   cursor: pointer;
-  text-align: left;
+  text-align: start;
   margin-bottom: 10px;
 }
 .car-trigger-label {
@@ -1146,6 +1148,12 @@ html:not(.dark) .hero-part-badge-name {
   color: var(--text-main);
   text-decoration: underline;
 }
+#footerEnBtn.active, #footerArBtn.active {
+  background: var(--pill-active-bg);
+  color: var(--pill-active-text);
+  border-color: var(--pill-active-bg);
+  font-weight: 700;
+}
 
 /* Floating Bottom Language Switcher */
 .bottom-lang-btn {
@@ -1329,12 +1337,12 @@ html:not(.dark) .hero-part-badge-name {
 }
 .status-banner.soldout {
   background: rgba(200, 30, 30, 0.14);
-  border-left: 3px solid var(--soldout-red);
+  border-inline-start: 3px solid var(--soldout-red);
   color: var(--soldout-red);
 }
 .status-banner.instock {
   background: rgba(5, 150, 105, 0.12);
-  border-left: 3px solid var(--stock-green);
+  border-inline-start: 3px solid var(--stock-green);
   color: var(--stock-green);
 }
 
@@ -1387,7 +1395,7 @@ html:not(.dark) .hero-part-badge-name {
   border: 1px solid var(--border-soft);
   background: var(--bg-elevated);
   color: var(--text-main);
-  text-align: left;
+  text-align: start;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -1479,12 +1487,29 @@ html:not(.dark) .hero-part-badge-name {
   padding: 4px 9px;
   border-radius: 99px;
   white-space: nowrap;
+  cursor: pointer;
 }
 .cloud-dot {
   width: 6px;
   height: 6px;
   border-radius: 99px;
   background: var(--stock-green);
+}
+.cloud-badge.sync-error {
+  color: var(--soldout-red);
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.35);
+}
+.cloud-badge.sync-error .cloud-dot {
+  background: var(--soldout-red);
+}
+.cloud-badge.syncing {
+  color: var(--de-gold);
+  background: rgba(229, 184, 0, 0.12);
+  border-color: rgba(229, 184, 0, 0.35);
+}
+.cloud-badge.syncing .cloud-dot {
+  background: var(--de-gold);
 }
 
 .tabs-row {
@@ -2394,6 +2419,8 @@ table.sales-table {
   .vehicle-section { padding-top: 12px; padding-bottom: 4px; }
   .mobile-vehicle-trigger { display: flex; }
   .cloud-badge { padding: 4px 6px; flex-shrink: 0; }
+  .cloud-badge.sync-error { padding: 4px 8px; }
+  .cloud-badge.sync-error .cloud-text { display: inline; font-size: 9px; }
 
   .mobile-quick-brands {
     display: flex;
@@ -2433,7 +2460,7 @@ table.sales-table {
     height: 2.5px;
     background: linear-gradient(90deg, #2d3039 0%, #2d3039 33%, var(--de-red) 33%, var(--de-red) 66%, var(--de-gold) 66%, var(--de-gold) 100%);
   }
-  .brand-pill-count { opacity: 0.65; margin-left: 3px; }
+  .brand-pill-count { opacity: 0.65; margin-inline-start: 6px; }
 
   .filter-toolbar {
     flex-direction: column;

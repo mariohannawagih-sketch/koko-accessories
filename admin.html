@@ -26,7 +26,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..900;1,6..96,400..900&family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=20261124">
 </head>
 <body>
 
@@ -95,15 +95,14 @@
               <span class="brand-title font-racing" style="font-size:16px;">KOKO ADMIN</span>
               <span class="brand-sub-line"></span>
             </div>
-            <div id="syncStatusBadge" class="cloud-badge" title="Cloud Database Sync Status">
+            <button type="button" id="syncStatusBadge" class="cloud-badge" onclick="forceSyncFromCloud()" title="Tap to refresh or retry cloud sync">
               <span class="cloud-dot"></span>
               <span class="cloud-text">CLOUD LIVE</span>
-            </div>
+            </button>
           </div>
 
           <div class="header-right">
-            <button type="button" class="header-btn" onclick="toggleAdminTheme()" aria-label="Toggle Dark / Light Mode">
-              <span id="adminThemeIcon">🌙</span>
+            <button type="button" class="header-btn theme-btn-pure-text" onclick="toggleAdminTheme()" aria-label="Toggle Dark / Light Mode">
               <span id="adminThemeLabel">DARK</span>
             </button>
             <a href="index.html" class="header-btn" title="Open Storefront">
@@ -451,7 +450,7 @@
         </div>
 
         <div style="display:flex;gap:10px;padding-top:6px;">
-          <button type="submit" class="btn-black" style="flex:1;height:44px;">
+          <button id="saveAccessoryBtn" type="submit" class="btn-black" style="flex:1;height:44px;">
             SAVE ACCESSORY
           </button>
           <button type="button" onclick="closeAccessoryModal()" class="btn-outline" style="height:44px;">
@@ -554,7 +553,7 @@
   <div id="toastNotice" class="toast-notice">Notice</div>
 
   <!-- Scripts -->
-  <script src="products.js"></script>
-  <script src="admin.js"></script>
+  <script src="products.js?v=20261124"></script>
+  <script src="admin.js?v=20261124"></script>
 </body>
 </html>
