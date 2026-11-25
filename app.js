@@ -175,7 +175,7 @@ const BRAND_AR_MAP = {
 
 const CAT_AR_MAP = {
   all: 'كل الإكسسوارات',
-  tobb: 'حماية وتوب',
+  tobb: 'طُبَب جنوط',
   tags: 'شعارات وتاجات',
   keys: 'مفاتيح',
   keyscover: 'جرابات مفاتيح',
@@ -192,6 +192,7 @@ const CAT_AR_MAP = {
   seatbelt: 'إكسسوارات الحزام',
   scatbelt: 'أحزمة أمان',
   calipercovers: 'كفرات كاليبر',
+  exteriortrim: 'إكسسوارات خارجية وداخلية',
   exhausttips: 'ديفوزر ومخارج شكمان',
   ambientlight: 'إضاءة محيطية'
 };
